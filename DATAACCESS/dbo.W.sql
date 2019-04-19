@@ -1,0 +1,26 @@
+﻿CREATE TABLE [dbo].[W] (
+    [ID]          INT           NOT NULL,
+    [nome]        NVARCHAR (50) NOT NULL,
+    [peso]        FLOAT (53)    NOT NULL,
+    [A]           FLOAT (53)    NOT NULL,
+    [d]           INT           NOT NULL,
+    [tw]          FLOAT (53)    NOT NULL,
+    [bf]          INT           NOT NULL,
+    [tf]          FLOAT (53)    NOT NULL,
+    [Ix]          FLOAT (53)    NOT NULL,
+    [Wx]          FLOAT (53)    NOT NULL,
+    [rx]          FLOAT (53)    NOT NULL,
+    [Zx]          FLOAT (53)    NOT NULL,
+    [Iy]          FLOAT (53)    NOT NULL,
+    [Wy]          FLOAT (53)    NOT NULL,
+    [ry]          FLOAT (53)    NOT NULL,
+    [Zy]          FLOAT (53)    NOT NULL,
+    [rT]          FLOAT (53)    NOT NULL,
+    [IT]          FLOAT (53)    NOT NULL,
+    [Cw]          FLOAT (53)    NOT NULL,
+    [ProfCode]    INT           NOT NULL,
+    [Fabrication] INT           NOT NULL,
+    [R]           INT           NOT NULL, 
+    CONSTRAINT [PK_W] PRIMARY KEY ([ID])
+);
+

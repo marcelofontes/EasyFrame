@@ -1,0 +1,188 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{6A3730CC-5E6F-4762-87DF-E3BA0A89D605}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MainWin</RootNamespace>
+    <AssemblyName>MainWin</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="DotNumerics, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DotNumerics.1.1\lib\DotNumerics.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WeifenLuo.WinFormsUI.Docking, Version=3.0.4.0, Culture=neutral, PublicKeyToken=5cded1a1a0a7b481, processorArchitecture=MSIL">
+      <HintPath>..\packages\DockPanelSuite.3.0.4\lib\net40\WeifenLuo.WinFormsUI.Docking.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="WeifenLuo.WinFormsUI.Docking.ThemeVS2015, Version=3.0.4.0, Culture=neutral, PublicKeyToken=5cded1a1a0a7b481, processorArchitecture=MSIL">
+      <HintPath>..\packages\DockPanelSuite.ThemeVS2015.3.0.4\lib\net40\WeifenLuo.WinFormsUI.Docking.ThemeVS2015.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AppInfo.cs" />
+    <Compile Include="clsBeam.cs" />
+    <Compile Include="clsIOManager.cs" />
+    <Compile Include="CSTableDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CSTableDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="DesignConfigs.cs" />
+    <Compile Include="DWGPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="FCadastroMateriais.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FCadastroMateriais.Designer.cs">
+      <DependentUpon>FCadastroMateriais.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FCadastroPerfis.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FCadastroPerfis.Designer.cs">
+      <DependentUpon>FCadastroPerfis.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FViga.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FViga.Designer.cs">
+      <DependentUpon>FViga.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Load.cs" />
+    <Compile Include="Main.cs" />
+    <Compile Include="MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="ProjectInfo.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TreeForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TreeForm.Designer.cs">
+      <DependentUpon>TreeForm.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="FCadastroMateriais.resx">
+      <DependentUpon>FCadastroMateriais.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FCadastroPerfis.resx">
+      <DependentUpon>FCadastroPerfis.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FViga.resx">
+      <DependentUpon>FViga.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <EmbeddedResource Include="TreeForm.resx">
+      <DependentUpon>TreeForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <None Include="CSTableDataSet.xsc">
+      <DependentUpon>CSTableDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="CSTableDataSet.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>CSTableDataSet.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="CSTableDataSet.xss">
+      <DependentUpon>CSTableDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="img\beam.png" />
+    <Content Include="img\closedfolder.png" />
+    <Content Include="img\openfolder.png" />
+    <Content Include="img\profile.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DATAACCESS\DATAACCESS.csproj">
+      <Project>{c5620ddd-832c-4245-96b1-130106f9cd34}</Project>
+      <Name>DATAACCESS</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\FEM\FEM.csproj">
+      <Project>{9a3306df-090a-4ba4-b44b-f3a236236da8}</Project>
+      <Name>FEM</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NBR8800\NBR8800.csproj">
+      <Project>{40a66fc6-fc4d-4f6c-b5b2-39a2f5b4728d}</Project>
+      <Name>NBR8800</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
