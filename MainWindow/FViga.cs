@@ -8,12 +8,13 @@ using System.Linq;
 //using System.Threading.Tasks;
 using System.Windows.Forms;
 using Beam;
-using DATAACCESS;
+
 using FEM;
 using WeifenLuo.WinFormsUI.Docking;
 using MainWin;
 using System.IO;
-using NBR8800;
+using NBR6118_2014;
+
 
 
 
@@ -22,15 +23,18 @@ namespace MainWin
     public partial class FViga : DockContent
     {
 
-        private static List<float> Lbtop;
-        private static List<float> Lbbottom;    
+   
         private static List<Load>  loads;     // lista de cargas
-        List<float>    v;                              // lista de vaos
+        List<float>    v;                     // lista de vaos
         double      Length;
         string      name;
-        string      table;
         string      profile;
-        string      steel;
+        string      concrete;
+        double b;
+        double h;
+        double c;
+        string rebar;
+       
         
 
         public FViga()
@@ -45,13 +49,10 @@ namespace MainWin
             this.gridVao.Columns[1].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
            
             this.gridCC.Rows[0].Cells[0].Value = this.gridCC.RowCount;
+            this.btn_relatorio.Enabled = false; 
             
-            // preenche a combo com os nomes dos perfis
-            this.cbTabela.SelectedIndex = 7;
-            string tb = cbTabela.Text;
-            preencheComboPerfil(tb);
-            preencheComboMaterial();
             preencheGridCCcbList();
+            loadMaterialList();
 
         }
 
@@ -79,71 +80,7 @@ namespace MainWin
             //PointF p2 = new PointF(13.75f, 50);
             //this.dwgView.drawBeam(p1, p2);
         }
-
-        private void preencheComboPerfil                (string table)
-        {
-            cbPerfil.DataSource = null;
-            switch (table)
-            {
-                case "C":
-                    this.cbPerfil.DisplayMember = "nome";
-                    this.cbPerfil.DataSource = new PerfilC().getCSTable();
-                    break;
-                case "CS":
-                    this.cbPerfil.DisplayMember = "nome";
-                    this.cbPerfil.DataSource = new PerfilCS().getCSTable();
-                    break;
-                case "CVS":
-                    this.cbPerfil.DisplayMember = "nome";
-                    this.cbPerfil.DataSource = new PerfilCVS().getCSTable();
-                    break;
-                case "VS":
-                    this.cbPerfil.DisplayMember = "nome";
-                    this.cbPerfil.DataSource = new PerfilVS().getCSTable();
-                    break;
-                case "VSM":
-                    this.cbPerfil.DisplayMember = "nome";
-                    this.cbPerfil.DataSource = new PerfilVSM().getCSTable();
-                    break;
-                case "W":
-                    this.cbPerfil.DisplayMember = "nome";
-                    this.cbPerfil.DataSource = new PerfilW().getCSTable();
-                    break;
-                case "PS":
-                    this.cbPerfil.DisplayMember = "nome";
-                    this.cbPerfil.DataSource = new PerfilPS().getCSTable();
-                    break;
-                case "PSa":
-                    this.cbPerfil.DisplayMember = "nome";
-                    this.cbPerfil.DataSource = new PerfilPSa().getCSTable();
-                    break;
-            }
-        }
-
-        private void preencheComboMaterial()
-        {
-            cbAco.DataSource = null;
-            cbAco.DisplayMember = "name";
-            cbAco.DataSource = new Materials().getMaterialTable();
-
-        }
-
-        private void cbTabela_SelectedIndexChanged      (object sender, EventArgs e)
-        {
-            preencheComboPerfil(cbTabela.Text);
-        }
-
-        private void gridLb_CellValueChanged            (object sender, DataGridViewCellEventArgs e)
-        {
-            int nr = gridLb.RowCount;
-           
-            for ( int i = 0; i < nr; i++)
-            {
-                gridLb.Rows[i].Cells[0].Value = i+1;
-            }
-           
-        }
-
+       
         private void gridCC_CellValueChanged            (object sender, DataGridViewCellEventArgs e)
         {
             int nr = gridCC.RowCount;
@@ -171,8 +108,6 @@ namespace MainWin
 
             List<PointF> PL = new List<PointF>();
             v = new List<float>();
-            Lbtop = new List<float>();
-            Lbbottom = new List<float>();
             loads = new List<Load>();
 
             //Lbtop.Clear();
@@ -293,64 +228,39 @@ namespace MainWin
                 }
 
                 #endregion
-
-                // faz a leitura dos travamentos
-                #region Travamento
-
-                int m = gridLb.RowCount - 1;
-                float test;
-
-                for (int i = 0; i < m; i++)
+                
+                // faz a leitura das características da viga e do concreto
+                if(  string.IsNullOrEmpty(txt_b.Text)
+                    || string.IsNullOrEmpty(txt_h.Text)
+                    || string.IsNullOrEmpty(txt_c.Text)
+                    || !double.TryParse(txt_b.Text, out aux)
+                    || !double.TryParse(txt_h.Text, out aux)
+                    || !double.TryParse(txt_c.Text, out aux)
+                    )
                 {
-                    if (!float.TryParse((string)this.gridLb.Rows[i].Cells[1].Value, out test))
-                    {
-                        throw new IndexOutOfRangeException(" Lb - Digite um valor válido para a Posição x");
-                    }
-                    if (float.Parse(this.gridLb.Rows[i].Cells[1].Value.ToString()) > this.Length)
-                    {
-                        throw new IndexOutOfRangeException(" Lb - A Posição x deve ser menor que o comprimento total da viga");
-                    }
-                    else if (string.IsNullOrEmpty((string)this.gridLb.Rows[i].Cells[1].Value) || float.Parse(this.gridLb.Rows[i].Cells[1].Value.ToString()) < 0)
-                    {
-                        throw new IndexOutOfRangeException(" Lb - Digite um valor válido para a Posição x");
-                    }
-                    else if (float.Parse(this.gridLb.Rows[i].Cells[1].Value.ToString()) > 0 && float.Parse(this.gridLb.Rows[i].Cells[1].Value.ToString()) <= this.Length)
-                    {
-                        if (Convert.ToBoolean(this.gridLb.Rows[i].Cells[2].Value))
-                        {
-                            Lbtop.Add(float.Parse(this.gridLb.Rows[i].Cells[1].Value.ToString()));
-                        }
-                        if (Convert.ToBoolean(this.gridLb.Rows[i].Cells[3].Value))
-                        {
-                            Lbbottom.Add(float.Parse(this.gridLb.Rows[i].Cells[1].Value.ToString()));
-                        }
-                    }
+                    throw new IndexOutOfRangeException("As dimensões da seçao precisam ser valores numéricos.");
                 }
-                #endregion
-
-                #region informações de perfil e aço
-                if (string.IsNullOrEmpty(cbTabela.Text) || string.IsNullOrEmpty(cbPerfil.Text)|| string.IsNullOrEmpty(cbAco.Text))
-                {
-                    throw new Exception("Verifique os dados do perfil e do tipo de aço.");
-                }
-                #endregion
                 else
                 {
-                    table   = cbTabela.Text;
-                    profile = cbPerfil.Text;
-                    steel   = cbAco.Text;
+                    this.b = double.Parse(txt_b.Text);
+                    this.h = double.Parse(txt_h.Text);
+                    this.c = double.Parse(txt_c.Text);
+                    
                 }
+                if(string.IsNullOrEmpty(txt_nome_secao.Text) || string.IsNullOrEmpty(CbConcreto.Text))
+                {
+                    throw new IndexOutOfRangeException("Os valores dos campos nome e concreto nao podem ser vazios.");
+                }
+                else
+                {
+                    this.profile = txt_nome_secao.Text;
+                    this.concrete = CbConcreto.Text;
 
+                }
                 // para evitar que o metodo drawbeam altere o valor das variaveis
-                float[] a = new float[Lbtop.Count];
-                Lbtop.CopyTo(a);
-                List<float> top = a.ToList();
-
-                float[] b = new float[Lbbottom.Count];
-                Lbbottom.CopyTo(b);
-                List<float> bot = b.ToList(); ;
-               
-                this.dwgView.drawBeam(PL, top, bot);
+          
+                
+                this.dwgView.drawBeam(PL);
                 return true;
             }
 
@@ -371,7 +281,7 @@ namespace MainWin
             if (validaDados())
             {
                 clsIOManager io = new clsIOManager();
-                io.createBeamInputFile(name, v, Lbtop, Lbbottom, loads, table, profile, steel);
+                io.createBeamInputFile(name, v, loads, profile, concrete,b,h,c);
             }
         }
 
@@ -389,51 +299,31 @@ namespace MainWin
 
         private void btnCalcular_Click                  (object sender, EventArgs e)
         {
-            try
+              try
             {
 
-            if (validaDados())
-            {
-                clsIOManager io = new clsIOManager();
-                io.createBeamInputFile(name, v, Lbtop, Lbbottom, loads, table, profile, steel);
-                clsBeam b = io.readBeamInputFile(txtnomeviga.Text + ".cdv");
-                b.CalculateBeam();
-
-                double L = b.Length;
-                double step = L / 108;
-                double li = 0;
-                double cb;
-                double Lb=0;
-                Dictionary<string,Dictionary<double, DsgResult>> results = new Dictionary<string, Dictionary<double, DsgResult>>();
-                
-
-                // check for ULS combination
-                var lc = (from c in b.LCombination where c.cbType==combType.ULS select c).ToList();
-                foreach(var lcase in lc)
+                if (validaDados())
                 {
-                    Dictionary<double, DsgResult> aux = new Dictionary<double, DsgResult>();
-                    li = 0;
-                    Lb = 0;
-                    while (li <= L)
-                    {
-                        cb = b.calculateCb(li, lcase, ref Lb);
-                        var iF = b.getInternalForces(lcase, li);
-                        NBR8800Dsgn des = new NBR8800Dsgn(b.CS, iF, 0, cb, Lb, 0, 0, 0);
-                        aux.Add(li,des.startDesign());
-
-                        li += step;
-                    }
-                    results.Add(lcase.name, aux);
+                    clsIOManager io = new clsIOManager();
+                    io.createBeamInputFile(name, v,  loads, profile, concrete,this.b,h,c);
+                    clsBeam b = io.readBeamInputFile(txtnomeviga.Text + ".cdv");
+                        io.DesignBeam(ref b);
+                        b.GeraDetalhamento();
+                    
+                    List<clsBeam> ListaVigas = new List<clsBeam>();
+                    ListaVigas.Add(b);
+                    BOM Bom = new BOM(ListaVigas, "BOM_Detalhado_" + b.Name + ".txt", "BOM_Resumo_" + b.Name + ".txt");
+                    ReportOptionDialog RD = new ReportOptionDialog("Resumo de Materiais da viga", "Relatório de Cáculo da viga", "VIGA",b.Name);
+                    MessageBox.Show("Dimesnionamento Concluído");
+                    RD.ShowDialog();
                 }
-                io.printDesignResults(this.txtnomeviga.Text, results);
-
-                System.Windows.Forms.MessageBox.Show("Cálculo concluído com sucesso!");
-            }
+                this.btn_relatorio.Enabled = true;
             }
             catch(Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
+             
         }
 
      /// <summary>
@@ -460,16 +350,16 @@ namespace MainWin
                 switch (l.name)
                 {
                     case "Carga Permanente":
-                        txt_CP.Text = l.Py.ToString();
+                        txt_CP.Text = (-1*l.Py).ToString();
                         break;
                     case "Sobrecarga de Cobertura":
-                        txt_SCC.Text = l.Py.ToString();
+                        txt_SCC.Text = (-1*l.Py).ToString();
                         break;
                     case "Sobrecarga de Piso":
-                        txt_SCP.Text = l.Py.ToString();
+                        txt_SCP.Text = (-1* l.Py).ToString();
                         break;
                     case "Vento":
-                        txt_V.Text = l.Py.ToString();
+                        txt_V.Text = (-1*l.Py).ToString();
                         break;
                 }
             }
@@ -483,71 +373,24 @@ namespace MainWin
                 gridCC.Rows[i].Cells[1].Value = l.name;
                 gridCC.Rows[i].Cells[2].Value = l.LoadCase.Name;
                 gridCC.Rows[i].Cells[3].Value = l.a.ToString();
-                gridCC.Rows[i].Cells[4].Value = l.Py.ToString();
+                gridCC.Rows[i].Cells[4].Value = (-1*l.Py).ToString();
                 i++;
             }
 
             //preenche informações do perfil
-            cbTabela.Text = beam.CS.table;
-            cbAco.Text = beam.CS.material.Name;
-            cbPerfil.Text = beam.CS.Name;
+            // TODO - AVALIAR AS 3 LINHAS ABAIXO
+            this.txt_b.Text = beam.CS.b.ToString();
+            this.txt_h.Text = beam.CS.h.ToString();
+            this.txt_c.Text = beam.CS.cover.ToString();
+            this.txt_nome_secao.Text = beam.CS.Name;
+            this.CbConcreto.Text = beam.CS.material.Name;
+           // cbTabela.Text = beam.CS.table;
+            //cbAco.Text = beam.CS.material.Name;
+            //cbPerfil.Text = beam.CS.Name;
 
             // preenche tabela de travamentos
-            Dictionary<double, string> lb = new Dictionary<double, string>();
-            foreach(var l in beam.toplateralBracing)
-            {
-                if (!lb.ContainsKey(l))
-                {
-                    lb.Add(l, "Top");
-                }
-            }
+         
 
-            foreach(var l in beam.bottomlateralBracing)
-            {
-                if (lb.ContainsKey(l))
-                {
-                    lb[l] = "both";
-                }
-                else
-                {
-                    lb.Add(l, "bottom");
-                }
-            }
-            i = 0;
-
-            double pos = 0;
-            lb.Remove(0);
-            foreach ( var v in beam.vaos)
-            {
-                pos += v;
-                if (lb.ContainsKey(pos))
-                {
-                    lb.Remove(pos);
-                }
-            }
-            var lb1 = lb.OrderBy(c => c.Key).ToList();
-            foreach(var l in lb1)
-            {
-                gridLb.RowCount += 1;
-                if (l.Value.CompareTo("Top") == 0)
-                {
-                    gridLb.Rows[i].Cells[1].Value = l.Key.ToString();
-                    gridLb.Rows[i].Cells[2].Value = true;
-                }
-                else if(l.Value.CompareTo("both") == 0)
-                {
-                    gridLb.Rows[i].Cells[1].Value = l.Key.ToString();
-                    gridLb.Rows[i].Cells[2].Value = true;
-                    gridLb.Rows[i].Cells[3].Value = true;
-                }
-                else if (l.Value.CompareTo("bottom") == 0)
-                {
-                    gridLb.Rows[i].Cells[1].Value = l.Key.ToString();
-                    gridLb.Rows[i].Cells[3].Value = true;
-                }
-
-                i++;
-            }
             validaDados();
             return true;
         }
@@ -574,5 +417,96 @@ namespace MainWin
                 }
             }
         }
+
+        private void loadMaterialList()
+        {
+            clsIOManager io = new clsIOManager();
+            io.ReadMaterialTable();
+            List<string> matnames = new List<string>();
+
+            foreach( var m in io.concreteMaterial)
+            {
+                matnames.Add(m.Name);
+            }
+            this.CbConcreto.DataSource = matnames;
+    
+
+        }
+
+        private void btn_relatorio_Click(object sender, EventArgs e)
+        {
+           
+                string NomeViga = this.txtnomeviga.Text;
+                ReportOptionDialog RD = new ReportOptionDialog("Resumo de materiais da viga", "Relatório de cálculo da viga", "VIGA", NomeViga);
+                RD.ShowDialog();                         
+
+
+        }
+
+        private void txt_CP_TextChanged(object sender, EventArgs e)
+        {
+            this.btn_relatorio.Enabled = false;
+        }
+
+        private void txt_SCC_TextChanged(object sender, EventArgs e)
+        {
+            this.btn_relatorio.Enabled = false;
+        }
+
+        private void txt_SCP_TextChanged(object sender, EventArgs e)
+        {
+            this.btn_relatorio.Enabled = false;
+        }
+
+        private void txt_V_TextChanged(object sender, EventArgs e)
+        {
+            this.btn_relatorio.Enabled = false;
+        }
+
+        private void gridCC_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+
+        }
+
+        private void gridCC_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+            this.btn_relatorio.Enabled = false;
+        }
+
+        private void gridVao_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+            this.btn_relatorio.Enabled = false;
+        }
+
+        private void txt_nome_secao_TextChanged(object sender, EventArgs e)
+        {
+            this.btn_relatorio.Enabled = false;
+        }
+
+        private void txt_b_TextChanged(object sender, EventArgs e)
+        {
+            this.btn_relatorio.Enabled = false;
+        }
+
+        private void txt_h_TextChanged(object sender, EventArgs e)
+        {
+            this.btn_relatorio.Enabled = false;
+        }
+
+        private void txt_c_TextChanged(object sender, EventArgs e)
+        {
+            this.btn_relatorio.Enabled = false;
+        }
+
+        private void CbConcreto_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            this.btn_relatorio.Enabled = false;
+        }
+
+        private void txtnomeviga_TextChanged(object sender, EventArgs e)
+        {
+            this.btn_relatorio.Enabled = false;
+        }
     }
 }
+

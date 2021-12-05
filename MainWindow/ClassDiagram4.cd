@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Beam.clsBeam">
+    <Position X="5.5" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QFyBAagBgBAAjjAgCABDGATCkCRMAsQJAghAEDQqOAA=</HashCode>
+      <FileName>clsBeam.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Beam.clsIOManager">
+    <Position X="3.25" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AApEYAkDAAQAkQgAEAAAAEhAGCBEQEgBAAgBoMQKIBI=</HashCode>
+      <FileName>clsIOManager.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MainWin.AppInfo">
+    <Position X="7.5" Y="3" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAEAAAAAAAIAAAAAAAAAAAAAAAQAAAAAAAAAAAA=</HashCode>
+      <FileName>AppInfo.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MainWin.DesignConfigs">
+    <Position X="7.5" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAQgAAAAAAAAA=</HashCode>
+      <FileName>DesignConfigs.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MainWin.ProjectInfo">
+    <Position X="7.5" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAgA=</HashCode>
+      <FileName>ProjectInfo.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="Beam.bar">
+    <Position X="10" Y="1.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAAAAAAAAAAAAAAEEAAAAAAAAAAAAA=</HashCode>
+      <FileName>clsIOManager.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

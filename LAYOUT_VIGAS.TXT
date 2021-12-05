@@ -1,0 +1,22 @@
+#CADIFEM V1.0
+#NAME
+VigaXX
+#SPANS
+10
+#END
+#SECTION
+W;W 410 x 46,1;ASTM A572-GR50      
+#LATERAL_SUPPORT_POSITION
+top;5
+#END
+#DISTLOADS
+1;Carga Permanente;10;Carga Permanente
+2;Sobrecarga de Cobertura;10;Sobrecarga de Cobertura
+3;Sobrecarga de Piso;10;Sobrecarga de Piso
+4;Vento;10;Vento
+#END
+#POINTLOADS
+5;TESTE1;5;-1;Carga Permanente
+6;TESTE2;2;-2;Sobrecarga de Cobertura
+#END
+#ENDALL

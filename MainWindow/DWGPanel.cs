@@ -31,8 +31,8 @@ namespace MainWin
         int             maxHeight;
         double          Length;
         List<PointF>    LP              = new List<PointF>();
-        List<float>     lbTop;
-        List<float>     lbBottom;
+      //  List<float>     lbTop;
+      //  List<float>     lbBottom;
         List<dwgPointLoad>    pPointLoad;
         
         bool            drawDim         = true;
@@ -43,13 +43,12 @@ namespace MainWin
             //this.BackColor = System.Drawing.Color.Black;
             g = this.CreateGraphics();
 
-            lbTop           = new List<float>();
-            lbBottom        = new List<float>();
             pPointLoad      = new List<dwgPointLoad>();
 
         }
 
-        public void             drawBeam(List<PointF> Plist, List<float> lbtop,List<float> lbbottom)
+       // public void             drawBeam(List<PointF> Plist, List<float> lbtop,List<float> lbbottom)
+             public void drawBeam(List<PointF> Plist)
         {
             LP = Plist.ToList();
             g = this.CreateGraphics();
@@ -90,32 +89,7 @@ namespace MainWin
                     this.drawDimension(p1, p2, sc);
                 }
             }
-
-            // draw lateral support
-            int nn = lbtop.Count();
-            int m = lbbottom.Count();
-
-            float[] a = new float[nn];
-            lbtop.CopyTo(a);
-            this.lbTop = a.ToList();
-
-            float[] b = new float[m];
-            lbbottom.CopyTo(b);
-            this.lbBottom = b.ToList();
-
-            for (int ii = 0; ii < nn; ii++)
-            {
-                lbtop[ii] *= (float)sc;
-                lbtop[ii] += 15;
-            }
-            for (int ii = 0; ii < m; ii++)
-            {
-                lbbottom[ii] *= (float)sc;
-                lbbottom[ii] += 15;
-            }
-            
-
-            this.drawLateralSupport(lbtop, lbbottom);
+           
 
 
         }
@@ -235,7 +209,7 @@ namespace MainWin
         {
             if (LP.Count>0)
             {
-                this.drawBeam(this.LP,this.lbTop,this.lbBottom);
+                this.drawBeam(this.LP);
             }
             base.OnPaint(e);
         }

@@ -12,6 +12,7 @@
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -61,6 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppInfo.cs" />
+    <Compile Include="BOM.cs" />
     <Compile Include="clsBeam.cs" />
     <Compile Include="clsIOManager.cs" />
     <Compile Include="CSTableDataSet.Designer.cs">
@@ -72,23 +74,17 @@
     <Compile Include="DWGPanel.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="FCadastroMateriais.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="FCadastroMateriais.Designer.cs">
-      <DependentUpon>FCadastroMateriais.cs</DependentUpon>
-    </Compile>
-    <Compile Include="FCadastroPerfis.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="FCadastroPerfis.Designer.cs">
-      <DependentUpon>FCadastroPerfis.cs</DependentUpon>
-    </Compile>
     <Compile Include="FViga.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FViga.Designer.cs">
       <DependentUpon>FViga.cs</DependentUpon>
+    </Compile>
+    <Compile Include="InputForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="InputForm.Designer.cs">
+      <DependentUpon>InputForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Load.cs" />
     <Compile Include="Main.cs" />
@@ -101,20 +97,23 @@
     <Compile Include="Program.cs" />
     <Compile Include="ProjectInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReportOptionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ReportOptionDialog.Designer.cs">
+      <DependentUpon>ReportOptionDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="TreeForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="TreeForm.Designer.cs">
       <DependentUpon>TreeForm.cs</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="FCadastroMateriais.resx">
-      <DependentUpon>FCadastroMateriais.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FCadastroPerfis.resx">
-      <DependentUpon>FCadastroPerfis.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="FViga.resx">
       <DependentUpon>FViga.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="InputForm.resx">
+      <DependentUpon>InputForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
@@ -129,9 +128,15 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="ReportOptionDialog.resx">
+      <DependentUpon>ReportOptionDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="TreeForm.resx">
       <DependentUpon>TreeForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
+    <None Include="ClassDiagram3.cd" />
+    <None Include="ClassDiagram4.cd" />
     <None Include="CSTableDataSet.xsc">
       <DependentUpon>CSTableDataSet.xsd</DependentUpon>
     </None>
@@ -143,6 +148,8 @@
     <None Include="CSTableDataSet.xss">
       <DependentUpon>CSTableDataSet.xsd</DependentUpon>
     </None>
+    <None Include="DATA\RebarMaterial.dat" />
+    <None Include="DATA\RebarSection.dat" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -158,25 +165,36 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="img\beam.png" />
-    <Content Include="img\closedfolder.png" />
-    <Content Include="img\openfolder.png" />
-    <Content Include="img\profile.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\DATAACCESS\DATAACCESS.csproj">
-      <Project>{c5620ddd-832c-4245-96b1-130106f9cd34}</Project>
-      <Name>DATAACCESS</Name>
-    </ProjectReference>
     <ProjectReference Include="..\FEM\FEM.csproj">
       <Project>{9a3306df-090a-4ba4-b44b-f3a236236da8}</Project>
       <Name>FEM</Name>
     </ProjectReference>
-    <ProjectReference Include="..\NBR8800\NBR8800.csproj">
-      <Project>{40a66fc6-fc4d-4f6c-b5b2-39a2f5b4728d}</Project>
-      <Name>NBR8800</Name>
+    <ProjectReference Include="..\NBR6118_2014\NBR6118_2014.csproj">
+      <Project>{e995a1df-fe50-4aca-9b2d-4d9b0485d055}</Project>
+      <Name>NBR6118_2014</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="DATA\Material.dat" />
+    <Content Include="img\beamico.ico" />
+    <Content Include="img\beamico.png" />
+    <Content Include="img\beamico.svg" />
+    <Content Include="img\closedfolder.ico" />
+    <Content Include="img\I_lam.png" />
+    <Content Include="img\I_lam.svg" />
+    <Content Include="img\I_sold1.png" />
+    <Content Include="img\I_sold1.svg" />
+    <Content Include="img\I_sold2.png" />
+    <Content Include="img\I_sold2.svg" />
+    <Content Include="img\openfolder.ico" />
+    <Content Include="img\profile.ico" />
+    <Content Include="img\U_lam.png" />
+    <Content Include="img\U_lam.svg" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
+  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

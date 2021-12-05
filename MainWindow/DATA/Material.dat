@@ -1,0 +1,7 @@
+﻿#int _ID    string _Name     double _Fck(MPa)     TipoAgregado _Agregado 
+#BEGIN
+1;C20;20;GRANITO		
+2;C25;25;GRANITO
+3;C30;30;GRANITO
+4;C35;35;GRANITO
+#END

@@ -6,7 +6,7 @@ using System.IO;
 using System.Data.Sql;
 using System.Linq;
 using FEM;
-using DATAACCESS;
+
 
 
 namespace Beam
@@ -26,7 +26,7 @@ namespace Beam
         //    // clsLoadClass lc2 = new clsLoadClass(1, "SC", 1.25, 1, 1, 1,false);
 
 
-        //    clsCsSection c = new clsCsSection();
+        //    CsSection c = new CsSection();
         //    //DBLinqMapping db = new DBLinqMapping();
 
         //    //var i = from aa in db.W where aa.nome == "W 530 x 66,0" select aa;
@@ -56,7 +56,7 @@ namespace Beam
         //    //    c.R  = a[0].R;
         //    //    c.profCode = a[0].profCode;
         //    //    c.fabrication = a[0].fabrication;
-        //    //    c.material = new clsMaterial("A36", 200000000, 77000000, 25, 40);    //[KN/m2]
+        //    //    c.material = new SteelMaterial("A36", 200000000, 77000000, 25, 40);    //[KN/m2]
 
            
         //    Beam.clsBeam b = new Beam.clsBeam(1, "Viga", v, c);

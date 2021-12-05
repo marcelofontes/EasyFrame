@@ -9,7 +9,7 @@ namespace FEM
     /// <summary>
     /// SuperClass
     /// </summary>
-    public class clsFEM
+    public abstract class clsFEM 
     {
         // Properties
         public int ID { get; set; }

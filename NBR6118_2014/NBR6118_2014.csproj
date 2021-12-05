@@ -1,16 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{9A3306DF-090A-4BA4-B44B-F3A236236DA8}</ProjectGuid>
+    <ProjectGuid>{E995A1DF-FE50-4ACA-9B2D-4D9B0485D055}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>FEM</RootNamespace>
-    <AssemblyName>FEM</AssemblyName>
+    <RootNamespace>NBR6118_2014</RootNamespace>
+    <AssemblyName>NBR6118_2014</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -41,30 +42,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CsSection.cs" />
-    <Compile Include="clsElement.cs" />
-    <Compile Include="clsFEM.cs" />
-    <Compile Include="clsLoad.cs" />
-    <Compile Include="clsLoadCase.cs" />
-    <Compile Include="clsLoadCombination.cs" />
-    <Compile Include="Detalhamento.cs" />
-    <Compile Include="Rebar.cs" />
-    <Compile Include="RebarMaterial.cs" />
-    <Compile Include="clsNode.cs" />
-    <Compile Include="clsPoint.cs" />
-    <Compile Include="clsSupport.cs" />
-    <Compile Include="Material.cs" />
+    <Compile Include="NBR6118.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClassDiagram3.cd" />
+    <ProjectReference Include="..\FEM\FEM.csproj">
+      <Project>{9a3306df-090a-4ba4-b44b-f3a236236da8}</Project>
+      <Name>FEM</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

@@ -70,7 +70,7 @@ namespace FEM
         clsPoint                                Coord;
         public clsSupport                       Support;
         List<clsLoad>                           Loads; // nodal loads
-        public Dictionary<string,Disp>          Displacement;
+        public Dictionary<string,Disp>          Displacement; // Load case - deslocamentos
         private Release                         Releases;
         bool                                    internalNode = false;
         bool                                    lateralSupport = false;

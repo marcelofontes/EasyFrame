@@ -28,14 +28,14 @@ namespace FEM
     public class clsElement : clsFEM
     {
 
-        public double           Length         { get; }   // member length - to be used in Design
+        public double           Length         { get; set; }   // member length - to be used in Design
         public double           RealLength     { get; set; } // Length to be used in the drawing
         public double           Weight         { get; set; }          // bar total weight
         public clsNode          StartNode      { get; set; }
         public clsNode          EndNode        { get; set; }
         public ElemType         ElementType;
    
-        public clsCsSection     CS             { get; set; }     // Cross Section 
+        public CsSection        CS             { get; set; }     // Cross Section 
        
         public double           Alpha;          // bar inclination 
         private int[]           DOFId;          // Degrees of freedom ID
@@ -63,7 +63,7 @@ namespace FEM
         /// <param name="_CS"></param>
         /// <param name="_ElemType"></param>
         /// <param name="_MType"></param>
-        public              clsElement(int _ID, string _Name, clsNode _StartNode, clsNode _EndNode, clsCsSection _CS, ElemType _ElemType)
+        public              clsElement(int _ID, string _Name, clsNode _StartNode, clsNode _EndNode, CsSection _CS, ElemType _ElemType)
         {
             StartNode   = _StartNode;
             EndNode     = _EndNode;
@@ -72,32 +72,39 @@ namespace FEM
             Weight      =  Length * CS.wgt;
             this.ID     = _ID;
             this.Name   = _Name;
-            
+
+            startAnalysis();
+
+        }
+                
+        private void startAnalysis()
+        {
+
             clsPoint Pi = StartNode.GetCoord();
             clsPoint Pf = EndNode.GetCoord();
             IntForces = new Dictionary<string, Dictionary<double, IntForces>>();
-
             // calculate bar Length
-            Length = Math.Sqrt(Math.Pow((Pf.x - Pi.x), 2) + Math.Pow((Pf.y - Pi.y), 2));
-            
-           // calculate bar inclination
-            Alpha = Math.Atan((Pf.y - Pi.y) / (Pf.x - Pi.x));
+            this.Length = Math.Sqrt(Math.Pow((Pf.x - Pi.x), 2) + Math.Pow((Pf.y - Pi.y), 2));
 
+            // calculate bar inclination
+            Alpha = Math.Atan((Pf.y - Pi.y) / (Pf.x - Pi.x));
             // Calculate Vector of DOF
             CalculateDOFId();
 
             // define element matrices
             AssembElemGlStiffMatrix();
         }
+
+        
         /// <summary>
         /// Calculates Elements Local Stiffness matrix
         /// </summary>
         public void         CalculateKLocal()
         {
 
-            double E = CS.material.E;
-            double I = CS.Ix*Math.Pow(10,-8);
-            double A = CS.A*Math.Pow(10,-4);
+            double E = CS.material.E*1000;         // kN/m2
+            double I = CS.Ix*Math.Pow(10,-8); // m4
+            double A = CS.A*Math.Pow(10,-4);  // m2
             double L = Length; //[m]
 
             if (ElementType == ElemType.BEAM2D)

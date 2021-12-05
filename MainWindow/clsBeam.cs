@@ -6,44 +6,47 @@ using System.Threading.Tasks;
 using FEM;
 using DotNumerics;
 using DotNumerics.LinearAlgebra;
+using NBR6118_2014;
 
 
 namespace Beam
 {
     public class clsBeam
     {
-        public int                                                  ID;                                             // beam ID
-        public string                                               Name            { set; get; }                   // beam name
-        public double                                               Length          { set; get; }                   // beam total length - all spans
-        private const int                                           ngl = 2;                                        // number of degrees of freedom per node
-        public int                                                  MeshRefinement  { set; get; }                   // beam refinement ... generate internal nodes
-        public int                                                  divisions       { set; get; }                   // number of divisions to trace diagrams and calculate de forces on beam span
-        private double                                              coordY = 0.0f;                                  // set origin coordinate
-        private int                                                 nVao;                                           // beam span
-        public  clsCsSection                                        CS;                                             // profile
-        private List<clsNode>                                       nodes = new List<clsNode>();                    // list of beam nodes
-        public List<double>                                         vaos            { set; get; }                   // list of spans
-        private List<clsElement>                                    bars = new List<clsElement>();                  // list of elements BEAM2D
-        public double                                               minSize         { set; get; }                   // minimum element size
-        private double[,]                                           KGL;                                            // Model Global stiffnes matrix
-        private Dictionary<string,double[]>                         F;                                              // Model Global load vector
-        private Dictionary<string, double[]>                        U;                                              // result vector
-        private Dictionary<string, double[]>                        EPL;                                            // local EP forces
-        public Dictionary<string, Dictionary<double, IntForces>>    InternalForces;                                 // stores forces along beam span
-        public Dictionary<string, Dictionary<double, double>>       Displacements;
-        public List<double>                                         toplateralBracing;
-        public List<double>                                         bottomlateralBracing;
-        public List<clsLoadClass>                                   LClass;
-        public List<clsLoadCase>                                    LCase;
-        public List<clsLoadCombination>                             LCombination;
-        public List<clsLoad>                                        Loads;                                          // stores the list of applied loads
-        public bool                                                 optimize = false;
+        public int ID;                                             // beam ID
+        public string Name { set; get; }                   // beam name
+        public double Length { set; get; }                   // beam total length - all spans
+        private const int ngl = 2;                                        // number of degrees of freedom per node
+        public int MeshRefinement { set; get; }                   // beam refinement ... generate internal nodes
+        private double coordY = 0.0f;                                  // set origin coordinate
+        private int nVao;                                           // beam span
+        public CsSection CS;                                             // profile
+        private List<clsNode> nodes = new List<clsNode>();                    // list of beam nodes
+        public List<double> vaos { set; get; }                   // list of spans
+        private List<clsElement> bars = new List<clsElement>();                  // list of elements BEAM2D
+        public double minSize { set; get; }                   // minimum element size
+        private double[,] KGL;                                            // Model Global stiffnes matrix
+        private Dictionary<string, double[]> F;                                              // Model Global load vector
+        private Dictionary<string, double[]> U;                                              // result vector
+        private Dictionary<string, double[]> EPL;                                            // local EP forces
+        public Dictionary<string, Dictionary<double, IntForces>> InternalForces;                                 // stores forces along beam span
+        public Dictionary<string, Dictionary<double, double>> Displacements;                                  // stores displacements along the span - Lcase - position - uy
+        public List<double> toplateralBracing;
+        public List<double> bottomlateralBracing;
+        public List<clsLoadClass> LClass;
+        public List<clsLoadCase> LCase;
+        public List<clsLoadCombination> LCombination;
+        public List<clsLoad> Loads;                                          // stores the list of applied loads
+        public bool optimize = false;
+        public Dictionary<string, Dictionary<double, DsgResult>> results;
+        public Dictionary<int, Detalhamento> DetalhamentoViga;
 
-        public                              clsBeam() { }
 
-        public                              clsBeam( string _Name, List<double> _vaos, clsCsSection _CS)
+        public clsBeam() { }
+
+        public clsBeam(string _Name, List<double> _vaos, CsSection _CS)
         {
-            
+
             Name = _Name;
             nVao = _vaos.Count();
             vaos = _vaos;
@@ -70,15 +73,15 @@ namespace Beam
         /// <param name="_Name"></param>
         /// <param name="_vaos"></param>
         /// <param name="_CS"></param>
-        public                              clsBeam(int _ID, string _Name,  List<double> _vaos,  clsCsSection _CS)
+        public clsBeam(int _ID, string _Name, List<double> _vaos, CsSection _CS)
         {
-            ID      =   _ID;
-            Name    =   _Name;
-            nVao    =   _vaos.Count();
-            vaos    =   _vaos;
-            CS      =   _CS;
+            ID = _ID;
+            Name = _Name;
+            nVao = _vaos.Count();
+            vaos = _vaos;
+            CS = _CS;
 
-            foreach(var l in _vaos)
+            foreach (var l in _vaos)
             {
                 Length += l;
             }
@@ -90,17 +93,17 @@ namespace Beam
 
             genGeometry();
             generateLoadCombinations();
-            
+
         }
 
-        public void                         addSpans(double span)
+        public void addSpans(double span)
         {
             vaos.Add(span);
         }
         /// <summary>
         /// Generate beam Geometry
         /// </summary>
-        private void                        genGeometry()
+        private void genGeometry()
         {
             //foreach(double v in vaos) { Length += v; }
 
@@ -123,7 +126,7 @@ namespace Beam
         /// <summary>
         /// generate beam nodes
         /// </summary>
-        private  void                       generateNodes()
+        private void generateNodes()
         {
             clsPoint pt1 = new clsPoint(0, 0, coordY);
             double coord = 0;
@@ -153,7 +156,7 @@ namespace Beam
         /// generate system bars
         /// </summary>
         /// <param name="_profile"></param>
-        private void                        generateBars(clsCsSection _profile)
+        private void generateBars(CsSection _profile)
         {
             bars.Clear();
             this.renumberNodes();
@@ -177,31 +180,31 @@ namespace Beam
         /// 
         /// </summary>
         /// <returns></returns>
-        public List<clsElement>             getBarElements() { return bars; }
+        public List<clsElement> getBarElements() { return bars; }
         /// <summary>
         /// generate supports
         /// </summary>
-        private void                        generateSupports()
+        private void generateSupports()
         {
 
             int n = nodes.Count();
 
             for (int i = 0; i < n; i++)
             {
-                
+
                 if (i == 0)
                 {
                     clsSupport s = new clsSupport(i, 1, 1, 0, nodes[i].ID);
                     nodes[i].setLateralSupport();
                     nodes[i].AddSupport(s);
-                    setLateralBracing(nodes[i].GetCoord().x,true,true);
+                    setLateralBracing(nodes[i].GetCoord().x, true, true);
                 }
                 else
                 {
                     clsSupport s = new clsSupport(i, 0, 1, 0, nodes[i].ID);
                     nodes[i].AddSupport(s);
                     nodes[i].setLateralSupport();
-                    setLateralBracing(nodes[i].GetCoord().x,true,true);
+                    setLateralBracing(nodes[i].GetCoord().x, true, true);
                 }
             }
         }
@@ -209,9 +212,9 @@ namespace Beam
         /// add nodes by coordinate
         /// </summary>
         /// <param name="pt"></param>
-        public void                         addNode(clsPoint pt)
+        public void addNode(clsPoint pt)
         {
-               
+
             clsNode nd = new clsNode(this.nodes.Count(), pt);
             this.nodes.Add(nd);
 
@@ -219,15 +222,15 @@ namespace Beam
         /// <summary>
         /// 
         /// </summary>
-        private void                        sortnodesByCoord()
+        private void sortnodesByCoord()
         {
             IEnumerable<clsNode> orderedList = this.nodes.OrderBy(coord => coord.GetCoord().x);
             this.nodes = orderedList.ToList();
         }
         /// <summary>
-      /// sort nodes by ID
-      /// </summary>
-        private void                        sortnodesByID()
+        /// sort nodes by ID
+        /// </summary>
+        private void sortnodesByID()
         {
             IEnumerable<clsNode> orderedList = this.nodes.OrderBy(coord => coord.ID);
             this.nodes = orderedList.ToList();
@@ -237,7 +240,7 @@ namespace Beam
         /// </summary>
         /// <param name="p"></param>
         /// <param name="ld"></param>
-        public void                         addPointLoad_and_CreateNode(clsPoint p, clsLoad ld)
+        public void addPointLoad_and_CreateNode(clsPoint p, clsLoad ld)
         {
 
             var v = nodes.Where(c => c.GetCoord().x == p.x).ToList().Count();
@@ -278,7 +281,7 @@ namespace Beam
         /// 
         /// </summary>
         /// <param name="ld"></param>
-        public void                         addPointLoadonBeam(clsLoad ld)
+        public void addPointLoadonBeam(clsLoad ld)
         {
             double a = ld.a;
 
@@ -290,7 +293,7 @@ namespace Beam
         /// <summary>
         /// Adds load to a node element
         /// </summary>
-        public void                         addNodalLoad(clsLoad ld, int nodeID)
+        public void addNodalLoad(clsLoad ld, int nodeID)
         {
             var nd = nodes.Where(p => p.ID == nodeID);
             nd.First().AddLoad(ld);
@@ -302,11 +305,11 @@ namespace Beam
         /// </summary>
         /// <param name="ld"></param>
         /// <param name="barID"></param>
-        public void                         addLineLoad(clsLoad ld)
+        public void addLineLoad(clsLoad ld)
         {
             //var b = bars.Where(p => p.ID == barID);
             //b.First().AddLoad(ld);
-            foreach(var bar in bars)
+            foreach (var bar in bars)
             {
                 bar.AddLoad(ld);
             }
@@ -327,11 +330,11 @@ namespace Beam
         /// adds a cantilever 
         /// </summary>
         /// <param name="vao"></param>
-        public void                         addCantilever(double vao, string position)
+        public void addCantilever(double vao, string position)
         {
             int c = bars.Count();  //  get the number of bars
 
-            if (position.CompareTo("begin")==0)
+            if (position.CompareTo("begin") == 0)
             {
                 var n = (from ndd in nodes where (ndd.GetCoord().x == 0) select ndd).ToList();      //get the node with initial coordinate
                 clsNode nd = new clsNode(new clsPoint(c, -vao, coordY));
@@ -347,7 +350,7 @@ namespace Beam
         /// <summary>
         /// refine elements mesh
         /// </summary>
-        private void                        refineMesh()
+        private void refineMesh()
         {
             double coordx = 0.0f;
             for (int n = 0; n < nVao; n++)
@@ -355,7 +358,7 @@ namespace Beam
                 double step = vaos[n] / MeshRefinement;
                 if (step < 0.1)
                 {
-                    step = vaos[n]/(Math.Round(vaos[n] / minSize,0));
+                    step = vaos[n] / (Math.Round(vaos[n] / minSize, 0));
                 }
 
                 // create internal nodes if does not exists a node with same coord x
@@ -364,19 +367,20 @@ namespace Beam
                     coordx += step;
                     if (coordx < this.Length)
                     {
-                        var v = nodes.Where(c => c.GetCoord().x == Math.Round(coordx,2)).ToList().Count();
+                        var v = nodes.Where(c => c.GetCoord().x == Math.Round(coordx, 2)).ToList().Count();
                         if (v == 0)
                         {
                             double actualx = nodes.Last().GetCoord().x;
                             double l = coordx - actualx;
-                            if (Math.Abs(l) >= 0.1) { 
+                            if (Math.Abs(l) >= 0.1)
+                            {
 
-                            clsPoint p = new clsPoint(nodes.Count(), coordx, coordY);
-                            clsNode nd = new clsNode(p);
+                                clsPoint p = new clsPoint(nodes.Count(), coordx, coordY);
+                                clsNode nd = new clsNode(p);
 
-                            nd.setInternalNode();
-                            nodes.Add(nd);
-                         }
+                                nd.setInternalNode();
+                                nodes.Add(nd);
+                            }
                         }
                     }
                 }
@@ -385,7 +389,7 @@ namespace Beam
         /// <summary>
         /// Assembles Global stiffner matrix
         /// </summary>
-        private void                        AssembleKGL()
+        private void AssembleKGL()
         {
             int NEl = bars.Count();   // get number of elements
             int NND = nodes.Count();   // get number of nodes
@@ -398,14 +402,14 @@ namespace Beam
                 KEL = bars[n].GetKGL();
                 int[] DOFId = bars[n].GetDOFIdVector();
 
-                for (int i = 0; i < ngl*2; i++)
+                for (int i = 0; i < ngl * 2; i++)
                 {
 
-                    for (int j = 0; j < ngl*2; j++)
+                    for (int j = 0; j < ngl * 2; j++)
                     {
 
                         KGL[DOFId[i], DOFId[j]] = KGL[DOFId[i], DOFId[j]] + KEL[i, j];
-                       
+
                     }
                 }
             }
@@ -420,20 +424,20 @@ namespace Beam
             //    Console.WriteLine();
             //}
 
-           
-           
+
+
 
         }
         /// <summary>
         /// Assembles Load Vector of the global system
         /// </summary>
-        private void                        AssembleLoadVector()
+        private void AssembleLoadVector()
         {
-            int NEL     = bars.Count();
-            int NND     = nodes.Count();
-            F = new Dictionary<string,  double[]>();
-           
-            foreach(var b in bars)
+            int NEL = bars.Count();
+            int NND = nodes.Count();
+            F = new Dictionary<string, double[]>();
+
+            foreach (var b in bars)
             {
                 //b.calculateEPForces();
                 b.calculateGLForceVector();
@@ -450,28 +454,28 @@ namespace Beam
                     var Llist = a.GroupBy(p => p.LoadCase.Name);
 
                     foreach (var ld in Llist)
-                {
-                    string k    = ld.Key;
-                    double[] f = new double[2 * NND];
-                    foreach (var load in ld)
                     {
-                        int dof1 = nd.ID * 2 - 2;
-                        int dof2 = nd.ID * 2 - 1;
-                        f[dof1] += load.Py;
-                        f[dof2] += load.Mz;
+                        string k = ld.Key;
+                        double[] f = new double[2 * NND];
+                        foreach (var load in ld)
+                        {
+                            int dof1 = nd.ID * 2 - 2;
+                            int dof2 = nd.ID * 2 - 1;
+                            f[dof1] += load.Py;
+                            f[dof2] += load.Mz;
+                        }
+                        F.Add(k, f);
                     }
-                    F.Add(k, f);
                 }
-            }
             }
 
             //loop over all elements
             for (int i = 0; i < NEL; i++)
             {
                 int[] DOFId = bars[i].GetDOFIdVector();   // get vector of degree of freed for that bar 
-                var FL      = bars[i].getGLForceVector(); // get the element global load vector of the bar wich is a dictionary at this point
+                var FL = bars[i].getGLForceVector(); // get the element global load vector of the bar wich is a dictionary at this point
 
-                foreach(var l in FL)
+                foreach (var l in FL)
                 {
                     if (F.ContainsKey(l.Key))
                     {
@@ -484,7 +488,7 @@ namespace Beam
                         }
                         F[k] = BGF;         // replace the old vector by updated vector
                     }
-                   else
+                    else
                     {
                         var k = l.Key;     // retrieve key
                         var EGF = FL[k];   // retrieve element global forces vector for key k
@@ -501,9 +505,9 @@ namespace Beam
         /// <summary>
         /// Impose restriction due support type in the KGL and F
         /// </summary>
-        private void                        ImposeSupportRetrictions()
+        private void ImposeSupportRetrictions()
         {
-            
+
             int n = nodes.Count();
             if (bars.First().ElementType == ElemType.FRAME2D)
             {
@@ -523,7 +527,7 @@ namespace Beam
                             {
                                 k = FF.Key;
                                 GF = F[k];
-                                GF[3 * N - 2] +=  1 * Math.Pow(10, 15);
+                                GF[3 * N - 2] += 1 * Math.Pow(10, 15);
                                 F[k] = GF;
                             }
                             //F[3 * N - 2] = F[3 * N - 2] + 1 * Math.Pow(10,15);
@@ -536,7 +540,7 @@ namespace Beam
                             {
                                 k = FF.Key;
                                 GF = F[k];
-                                GF[3 * N - 1] +=  1 * Math.Pow(10, 20);
+                                GF[3 * N - 1] += 1 * Math.Pow(10, 20);
                                 F[k] = GF;
                             }
                             //F[3 * N - 1] = F[3 * N - 1] + 1 * Math.Pow(10, 15);
@@ -549,7 +553,7 @@ namespace Beam
                             {
                                 k = FF.Key;
                                 GF = F[k];
-                                GF[3 * N ] +=  1 * Math.Pow(10, 15);
+                                GF[3 * N] += 1 * Math.Pow(10, 15);
                                 F[k] = GF;
                             }
                             //F[3 * N] = F[3 * N] + 1 * Math.Pow(10, 15);
@@ -572,14 +576,14 @@ namespace Beam
                         if (Sup.Ty == 1)
                         {
                             //KGL[2 * N - 2, 2 * N - 2] = KGL[2 * N - 2, 2 * N - 2] + 1 * Math.Pow(10, 15);
-                            for(int j = 0; j < ngl*n; j++)
+                            for (int j = 0; j < ngl * n; j++)
                             {
                                 KGL[2 * N - 2, j] = 0;
                                 KGL[j, 2 * N - 2] = 0;
                             }
-                            
+
                             KGL[2 * N - 2, 2 * N - 2] = 1;
-                           
+
                             //foreach (var FF in F)
                             //{
                             //    k = FF.Key;
@@ -615,16 +619,16 @@ namespace Beam
                 foreach (var ld in F)
                 {
                     k = ld.Key;
-                   
 
-                    double[] f = new double[ngl*n];
-                    ld.Value.CopyTo(f,0);
 
-                    for (int i = 0; i <  n; i++)
+                    double[] f = new double[ngl * n];
+                    ld.Value.CopyTo(f, 0);
+
+                    for (int i = 0; i < n; i++)
                     {
                         if (nodes[i].isSupport)
                         {
-                           int id = nodes[i].ID;
+                            int id = nodes[i].ID;
 
                             if (nodes[i].Support.Ty == 1)
                             {
@@ -644,11 +648,11 @@ namespace Beam
         /// <summary>
         /// renumber nodes
         /// </summary>
-        public void                         renumberNodes()
+        public void renumberNodes()
         {
             this.sortnodesByCoord();
             int i = 0;
-            foreach(clsNode n in nodes)
+            foreach (clsNode n in nodes)
             {
                 n.ID = i + 1;
                 i += 1;
@@ -660,7 +664,7 @@ namespace Beam
         /// <summary>
         /// renumber bars
         /// </summary>
-        public void                         renumberBars()
+        public void renumberBars()
         {
             this.generateBars(CS);
 
@@ -669,39 +673,39 @@ namespace Beam
         /// return list of nodes
         /// </summary>
         /// <returns></returns>
-        public List<clsNode>                getNodes() { return this.nodes; }
+        public List<clsNode> getNodes() { return this.nodes; }
         /// <summary>
         /// assamble EP local vector
         /// </summary>
-        private void                        AssembleEPLTotalVector()
+        private void AssembleEPLTotalVector()
         {
             EPL = new Dictionary<string, double[]>();
             int i = 0;
-            foreach(var b in bars)
+            foreach (var b in bars)
             {
                 var Ep = b.getEPVector();
                 var dof = b.GetDOFIdVector();
 
-                foreach(var E in Ep)
+                foreach (var E in Ep)
                 {
                     string k = E.Key;
                     var epload = Ep[k];
 
                     if (EPL.ContainsKey(k))
                     {
-                    var aux = EPL[k];
+                        var aux = EPL[k];
 
-                    aux[dof[0]] += epload[0];
-                    aux[dof[1]] += epload[1];
-                    aux[dof[2]] += epload[2];
-                    aux[dof[3]] += epload[3];
-                    EPL[k] = aux; 
+                        aux[dof[0]] += epload[0];
+                        aux[dof[1]] += epload[1];
+                        aux[dof[2]] += epload[2];
+                        aux[dof[3]] += epload[3];
+                        EPL[k] = aux;
                     }
 
                     else
                     {
-                   
-                        double[] aux =new double[ngl*nodes.Count()];
+
+                        double[] aux = new double[ngl * nodes.Count()];
                         aux[dof[0]] = epload[0];
                         aux[dof[1]] = epload[1];
                         aux[dof[2]] = epload[2];
@@ -716,9 +720,9 @@ namespace Beam
         /// <summary>
         /// assemble model
         /// </summary>
-        private void                        AssembleModel()
+        private void AssembleModel()
         {
-            
+
             AssembleKGL();
             AssembleLoadVector();
             ImposeSupportRetrictions();
@@ -730,7 +734,7 @@ namespace Beam
         /// <summary>
         /// Solve the linear system
         /// </summary>
-        private void                        solveEquation()
+        private void solveEquation()
         {
             Matrix K = new Matrix(KGL);
             U = new Dictionary<string, double[]>();
@@ -738,16 +742,16 @@ namespace Beam
             foreach (var f in F)
             {
                 i = 0;
-                string k =              f.Key;
-                Vector ff =             new Vector(f.Value);
-                LinearEquations Leq =   new LinearEquations();
-                double[] u =            Leq.Solve(K, ff).ToArray();
+                string k = f.Key;
+                Vector ff = new Vector(f.Value);
+                LinearEquations Leq = new LinearEquations();
+                double[] u = Leq.Solve(K, ff).ToArray();
                 U.Add(k, u);
-                
+
                 foreach (var n in nodes)
                 {
                     var DoF = n.DofRelated;
-                   
+
                     Disp D = new Disp();
                     D.ux = 0;
                     D.uy = u[DoF[0]];
@@ -757,17 +761,17 @@ namespace Beam
                 }
 
             }
-            
+
             clsIOManager inp = new clsIOManager(vaos, new List<clsLoad>());
             inp.printDisplacements(U);
         }
         /// <summary>
         /// calculate reactions
         /// </summary>
-        private void                        calculateReactions()
+        private void calculateReactions()
         {
             AssembleKGL();
-            int i=0;
+            int i = 0;
             this.AssembleEPLTotalVector();
             foreach (var nd in nodes)
             {
@@ -794,13 +798,15 @@ namespace Beam
                             {
                                 R.Ty += KGL[V, j] * ul[j];
 
-                            }else { R.Ty = 0; }
+                            }
+                            else { R.Ty = 0; }
 
                             if (nd.Support.Rz == 1)
                             {
                                 R.Mz += KGL[M, j] * ul[j];
 
-                            }else { R.Mz =0; }
+                            }
+                            else { R.Mz = 0; }
                         }
 
                         if (nd.Support.Ty == 1)
@@ -808,11 +814,12 @@ namespace Beam
                             R.Ty += Epg[V];
                         }
                         else { R.Ty = 0; }
-                        
+
                         if (nd.Support.Rz == 1)
                         {
                             R.Mz += Epg[M];
-                        } else { R.Mz = 0; }
+                        }
+                        else { R.Mz = 0; }
 
                         if (nodes[i].isSupport)
                         {
@@ -822,9 +829,9 @@ namespace Beam
                             }
                             else { nodes[i].Support.Reactions[k] = R; }
                         }
-                        
+
                     }
-                   
+
                 }
                 i++;
             }
@@ -834,14 +841,14 @@ namespace Beam
         /// <summary>
         /// Calculate nodal internal forces
         /// </summary>
-        private void                        calculateInternalForces()
+        private void calculateInternalForces()
         {
             // iterate throught each element
-           
-            foreach(var bar in bars)
+
+            foreach (var bar in bars)
             {
-                var kl  = bar.GetKL();
-                var rt  = bar.GetRotMatrix();
+                var kl = bar.GetKL();
+                var rt = bar.GetRotMatrix();
                 var dof = bar.GetDOFIdVector();
 
                 // iterate throut each load case/load class
@@ -898,20 +905,20 @@ namespace Beam
         /// <summary>
         /// Interpolate internal forces along beam span
         /// </summary>
-        public void                         calculeSpanInternalForces()
+        public void calculeSpanInternalForces()
         {
             int n = bars.Count();
             double x = 0;
             InternalForces = new Dictionary<string, Dictionary<double, IntForces>>();
             Dictionary<string, Dictionary<double, IntForces>> intForces = new Dictionary<string, Dictionary<double, IntForces>>(); //stores forces along beam span for each loadcase
 
-            for (int j=0; j<n; j++) // loop over all bar elements
+            for (int j = 0; j < n; j++) // loop over all bar elements
             {
                 double step = bars[j].Length;
-               
+
                 double L = bars[j].Length;
                 double E = bars[j].CS.material.E;
-                double I = bars[j].CS.Ix*(1e-8);
+                double I = bars[j].CS.Ix * (1e-8);
 
                 var nd1 = bars[j].StartNode;
                 var nd2 = bars[j].EndNode;
@@ -923,9 +930,9 @@ namespace Beam
 
                     if (bars[j].getEPVector().ContainsKey(k))
                     {
-                         EP = bars[j].getEPVector()[k];  // get equivalent nodal loads
+                        EP = bars[j].getEPVector()[k];  // get equivalent nodal loads
                     }
-                                        
+
                     x = 0;
                     IntForces IF = new IntForces();
                     while (x <= L)
@@ -941,33 +948,33 @@ namespace Beam
                         double N3v = 6 / (L * L);
                         double N5v = -12 / (L * L * L);
                         double N6v = 6 / (L * L);
-                        
+
                         IF.N = 0;
-                        IF.Mx =  ((N2 * nd1.Displacement[k].uy + N3 * nd1.Displacement[k].rz + N5 * nd2.Displacement[k].uy + N6 * nd2.Displacement[k].rz) * E * I - EP[1]);
-                        IF.Vy = ((N2v * nd1.Displacement[k].uy + N3v * nd1.Displacement[k].rz + N5v * nd2.Displacement[k].uy + N6v * nd2.Displacement[k].rz) * E * I ) - EP[0];
+                        IF.Mx = ((N2 * nd1.Displacement[k].uy + N3 * nd1.Displacement[k].rz + N5 * nd2.Displacement[k].uy + N6 * nd2.Displacement[k].rz) * E * I - EP[1]);
+                        IF.Vy = ((N2v * nd1.Displacement[k].uy + N3v * nd1.Displacement[k].rz + N5v * nd2.Displacement[k].uy + N6v * nd2.Displacement[k].rz) * E * I) - EP[0];
 
                         Dictionary<double, IntForces> aux1 = new Dictionary<double, IntForces>();
-                      
-                          if (!InternalForces.ContainsKey(k))
-                            {
-                                IF.Vy = bars[j].StartNode.InternalForces[k].Vy;
-                                aux1.Add(x , IF);
-                                InternalForces.Add(k, aux1);
-                            }
-                       
-                            else if (j == 0 && x > 0)
-                                {
-                                    InternalForces[k].Add(x, IF);
-                                }
-                            else if(j>0 && x == 0)
-                                {
-                                    Console.WriteLine("j={0}  vy= [1] - skip",j,IF.Vy);
-                                }
-                            else if(j>0 && x > 0)
-                                {
-                                    double l = InternalForces[k].Last().Key;
-                                    InternalForces[k].Add(x + l, IF);
-                                }
+
+                        if (!InternalForces.ContainsKey(k))
+                        {
+                            IF.Vy = bars[j].StartNode.InternalForces[k].Vy;
+                            aux1.Add(x, IF);
+                            InternalForces.Add(k, aux1);
+                        }
+
+                        else if (j == 0 && x > 0)
+                        {
+                            InternalForces[k].Add(x, IF);
+                        }
+                        else if (j > 0 && x == 0)
+                        {
+                            Console.WriteLine("j={0}  vy= [1] - skip", j, IF.Vy);
+                        }
+                        else if (j > 0 && x > 0)
+                        {
+                            double l = InternalForces[k].Last().Key;
+                            InternalForces[k].Add(x + l, IF);
+                        }
                         x += step;
                     }
                 }
@@ -978,17 +985,44 @@ namespace Beam
         /// <summary>
         /// generate displacement diagram
         /// </summary>
-        public void                         calculateSpanDisplacements()
+        /// 
+
+        public void fillInternalForcesOnBeam()
+        {
+            int nno = this.nodes.Count();
+
+
+            InternalForces = new Dictionary<string, Dictionary<double, IntForces>>();
+
+            var keys = nodes.First().InternalForces.Keys.ToList();
+            foreach (var k in keys)
+            {
+                Dictionary<double, IntForces> aux = new Dictionary<double, IntForces>();
+                foreach (var n in nodes)
+                {
+
+                    var coord = n.GetCoord();
+                    var iF = n.InternalForces[k];
+                    aux.Add(coord.x, iF);
+                }
+                InternalForces.Add(k, aux);
+
+
+
+
+            }
+        }
+        public void calculateSpanDisplacements()
         {
             Displacements = new Dictionary<string, Dictionary<double, double>>();
             int n = bars.Count();
 
-            for(int i = 0; i < n; i++)
+            for (int i = 0; i < n; i++)
             {
                 double L = bars[i].Length;
                 double E = bars[i].CS.material.E;
                 double I = bars[i].CS.Ix;
-               
+
                 double step = bars[i].Length;
 
                 var nd1 = bars[i].StartNode.Displacement;
@@ -996,10 +1030,10 @@ namespace Beam
 
                 double l = 0;
 
-                foreach ( var nd in nd1)
+                foreach (var nd in nd1)
                 {
                     string k = nd.Key;
-                    double x = 0;
+                    double x = 0; // posiçao na viga
 
                     while (x <= L)
                     {
@@ -1014,19 +1048,19 @@ namespace Beam
 
                         {
                             Dictionary<double, double> aux = new Dictionary<double, double>();
-                            aux.Add(x, uy);
-                            Displacements.Add(k, aux);
+                            aux.Add(x, uy);             // posicao e valor da flecha
+                            Displacements.Add(k, aux);   // load case - posicao e valor da flecha
                         }
 
                         else
                         {
-                            if (i == 0 && x>0)
+                            if (i == 0 && x > 0)
                             {
-                            //l = bars[i].Length;
-                            Displacements[k].Add(x , uy);
+                                //l = bars[i].Length;
+                                Displacements[k].Add(x, uy);
                             }
 
-                            else if (i>0 && x==0)
+                            else if (i > 0 && x == 0)
                             {
                                 //l = bars[i - 1].Length;
                                 //Displacements[k].Add(x + l, uy);
@@ -1034,8 +1068,8 @@ namespace Beam
 
                             else
                             {
-                                l =  Displacements[k].Last().Key;
-                                Displacements[k].Add(x+l , uy);
+                                l = Displacements[k].Last().Key;
+                                Displacements[k].Add(x + l, uy);
                             }
                             Dictionary<double, double> aux = new Dictionary<double, double>();
                             aux.Add(x, uy);
@@ -1053,43 +1087,92 @@ namespace Beam
         /// </summary>
         /// <param name="lc"></param>
         /// <returns></returns>
-        public Dictionary<double,double>    calculateCombDisplacements( clsLoadCombination lc)
+        public Dictionary<double, double> calculateCombDisplacements(clsLoadCombination lc)
         {
             Dictionary<double, double> Dsp = new Dictionary<double, double>();
-            int c                          = LCase.Count();             // take number of load cases
+            int c = LCase.Count();             // take number of load cases
             double lf;
 
             for (int i = 0; i < c; i++)
             {
-                string k        = LCase[i].Name;
-                string ldtype   = LCase[i].LClass.Name;
-                var d           = Displacements[k];
-                lf              = lc.getLoadFactor(ldtype);             // take load factor/multiplier for that load type
+                string k = LCase[i].Name;                        // nome do carregamento
+                string ldtype = LCase[i].LClass.Name;                 // classe do carregamento
+                var d = Displacements[k];                     // deslocamentos para o carregamento k
+                lf = lc.getLoadFactor(ldtype);             // take load factor/multiplier for that load type
                 double aux = 0;
 
                 foreach (var x in d)
-                  {
-                    if(Dsp.TryGetValue( x.Key ,out aux))
+                {
+                    if (Dsp.TryGetValue(x.Key, out aux))
                     {
                         aux += x.Value * lf;
-                        Dsp[x.Key] += aux;
+                        Dsp[x.Key] = aux;
                     }
                     else
                     {
-                        aux = x.Value * lf;
+                        aux += x.Value * lf;
                         Dsp.Add(x.Key, aux);
                     }
-                  }
+                }
             }
 
             return Dsp;
         }
+
         /// <summary>
-        /// calculate combined internal forces for a specific combination
+        /// calculate de deflection on an especific position and for a given load combination
+        /// </summary>
+        /// <param name="lc"></param>
+        /// <param name="position"></param>
+        /// <returns>deflection at the point </returns>
+        public double getDisplacements(clsLoadCombination lc, double position)
+        {
+            double x = position;
+            double Dsp = 0;
+            int c = LCase.Count();                        // take number of load cases
+
+
+            for (int i = 0; i < c; i++)
+            {
+                var f = this.calculateCombDisplacements(lc);
+                double aux;
+
+                if (f.TryGetValue(x, out aux))
+                {
+                    Dsp = aux;
+
+                }
+                else
+                {
+                    var lista = f.Keys.ToList();
+
+                    var xb = (from n in lista where (n < x) select n).ToList().Last();  // pega o valor imediatamente abaixo do ponto x 
+                    var xa = (from n in lista where (n > x) select n).ToList().First(); // pega o valor imediatamente acima do ponto x
+
+                    double ub = f[xb];
+                    double ua = f[xa];
+
+
+                    Dsp = (x - xa) * (ub - ua) / (xb - xa) + ua;
+
+
+                }
+
+            }
+            // checa se tem a posição pedida no vetor
+
+
+            // se nao tiver, interpola os valores
+
+            return Dsp;
+        }
+
+        /// <summary>
+        /// return the internal forces for a give combination
         /// </summary>
         /// <param name="lc"></param>
         /// <returns></returns>
-        public Dictionary<double,IntForces> calculateCombIntForces(clsLoadCombination lc)
+        public Dictionary<double, IntForces> calculateCombIntForces(clsLoadCombination lc)
         {
             {
                 Dictionary<double, IntForces> CLC = new Dictionary<double, IntForces>(); // combined load
@@ -1099,37 +1182,37 @@ namespace Beam
                 // loop for each load case
                 for (int i = 0; i < c; i++)
                 {
-                    string      k        = LCase[i].Name;
-                    string      ldtype   = LCase[i].LClass.Name;
-                    Dictionary<double, IntForces> d;
-                    //var         d        = InternalForces[k];
+                    string k = LCase[i].Name;
+                    string ldtype = LCase[i].LClass.Name;
+                    // Dictionary<double, IntForces> d;
+                    var d = InternalForces[k];
 
-                    if(InternalForces.TryGetValue(k, out d))
+                    if (InternalForces.TryGetValue(k, out d))
                     {
-                                lf       = lc.getLoadFactor(ldtype);             // take load factor/multiplier for that load type
-                    double      Maux     = 0;
-                    double      Vaux     = 0;
-                    double      Naux     = 0;
-                    IntForces   IF;
+                        lf = lc.getLoadFactor(ldtype);             // take load factor/multiplier for that load type
+                        double Maux = 0;
+                        double Vaux = 0;
+                        double Naux = 0;
+                        IntForces IF;
 
-                    foreach (var x in d)
-                    {
-                        if (CLC.TryGetValue(x.Key, out  IF))
+                        foreach (var x in d)
                         {
-                            IF.Mx += x.Value.Mx * lf;
-                            IF.Vy += x.Value.Vy * lf;
-                            IF.N  += x.Value.N * lf;
-                            CLC[x.Key] = IF;
-                        }
-                        else
-                        {
-                            IF.Mx = x.Value.Mx * lf;
-                            IF.Vy = x.Value.Vy * lf;
-                            IF.N = x.Value.N * lf;
-                            CLC.Add(x.Key, IF);
+                            if (CLC.TryGetValue(x.Key, out IF))
+                            {
+                                IF.Mx += x.Value.Mx * lf;
+                                IF.Vy += x.Value.Vy * lf;
+                                IF.N += x.Value.N * lf;
+                                CLC[x.Key] = IF;
+                            }
+                            else
+                            {
+                                IF.Mx = x.Value.Mx * lf;
+                                IF.Vy = x.Value.Vy * lf;
+                                IF.N = x.Value.N * lf;
+                                CLC.Add(x.Key, IF);
+                            }
                         }
                     }
-                }
                 }
                 return CLC;
             }
@@ -1140,7 +1223,7 @@ namespace Beam
         /// <param name="loadCase"></param>
         /// <param name="position"></param>
         /// <returns></returns>
-        public IntForces                    getInternalForces(string loadCase, double position)
+        public IntForces getInternalForces(string loadCase, double position)
         {
             string k = loadCase;
             double x = position;
@@ -1172,7 +1255,7 @@ namespace Beam
 
                 iForce.Mx = mx;
                 iForce.Vy = vx;
-                iForce.N  = 0;
+                iForce.N = 0;
                 //g.OrderByDescending(c=> c < x);
             }
 
@@ -1184,28 +1267,28 @@ namespace Beam
         /// <param name="lc"></param>
         /// <param name="position"></param>
         /// <returns></returns>
-        public IntForces                    getInternalForces(clsLoadCombination lc, double position)
+        public IntForces getInternalForces(clsLoadCombination lc, double position)
         {
-            double x            = position;
-            IntForces iForce    = new IntForces();
-            int c               = LCase.Count();                        // take number of load cases
-            double                lf;
+            double x = position;
+            IntForces iForce = new IntForces();
+            int c = LCase.Count();                        // take number of load cases
+            double lf;
 
-            for(int i = 0; i < c; i++)
+            for (int i = 0; i < c; i++)
             {
-                string k        = LCase[i].Name;
-                string ldtype   = LCase[i].LClass.Name;
-                var f           = this.calculateCombIntForces(lc);
-               // lf              = lc.getLoadFactor(ldtype);            // take load factor/multiplier for that load type
-                    
-                if(f.TryGetValue(x, out iForce))
-                    {
+                string k = LCase[i].Name;
+                string ldtype = LCase[i].LClass.Name;
+                var f = this.calculateCombIntForces(lc);
+                // lf              = lc.getLoadFactor(ldtype);            // take load factor/multiplier for that load type
+
+                if (f.TryGetValue(x, out iForce))
+                {
                     //var v = f.Where(b => b.Key == x);
                     //iForce      = v.First().Value;
-                    iForce.N    = f[x].N;
-                    iForce.Mx   = f[x].Mx; 
-                    iForce.Vy   = f[x].Vy;
-                    
+                    iForce.N = f[x].N;
+                    iForce.Mx = f[x].Mx;
+                    iForce.Vy = f[x].Vy;
+
 
 
                 }
@@ -1227,8 +1310,8 @@ namespace Beam
                     //iForce.Mx += mx * lf;
                     //iForce.Vy += vx * lf;
                     //iForce.N  += 0;
-                    iForce.Mx = mx ;
-                    iForce.Vy = vx ;
+                    iForce.Mx = mx;
+                    iForce.Vy = vx;
                     iForce.N = 0;
                 }
 
@@ -1244,7 +1327,7 @@ namespace Beam
         /// set lateral bracing on beam
         /// </summary>
         /// <param name="position"></param>
-        public void                         setLateralBracing(double position, bool top, bool bottom)
+        public void setLateralBracing(double position, bool top, bool bottom)
         {
             if (top)
             {
@@ -1256,103 +1339,22 @@ namespace Beam
             }
 
         }
-        /// <summary>
-        /// calculate cb
-        /// </summary>
-        /// <param name="position"></param>
-        /// <param name="Lcase"></param>
-        public double                       calculateCb(double position, clsLoadCombination lc, ref double Lb)
-        {
-            double x = position;
-            var IF = this.calculateCombIntForces(lc);
 
-            string k = lc.name;
-            double Rm = 1;
-            //double Lb;
-            double inf = 0;
-            double sup = 0;
-            double Mx = this.getInternalForces(lc, position).Mx;
-            var lbtop = toplateralBracing.OrderBy(d => d).ToList();
-            var lbbot = bottomlateralBracing.OrderBy(d => d).ToList();
-           
-            if (Mx >= 0)
-            {
-                if (toplateralBracing.Count == 0) { Lb = Length; }
-                else
-                {
-                    inf = lbtop.Where(c => c <= x).ToList().Last();
-                    sup = lbtop.Where(c => c >= x).ToList().First();
-                    Lb = sup - inf;
-                }
-            }
-            else
-            {
-                if (bottomlateralBracing.Count == 0) { Lb = Length; }
-                else
-                {
-                    inf = lbbot.Where(c => c <= x).ToList().Last();
-                    sup = lbbot.Where(c => c >= x).ToList().First();
-                    Lb = sup - inf;
-                }
-            }
-
-            var M = IF.Where(c => c.Key >= inf && c.Key <= sup).ToList();
-            var Mmax = M.Max(c => Math.Abs(c.Value.Mx));
-            double MA = Math.Abs(this.getInternalForces(lc, inf + 0.25 * Lb).Mx);
-            double MB = Math.Abs(this.getInternalForces(lc, inf + 0.50 * Lb).Mx);
-            double MC = Math.Abs(this.getInternalForces(lc, inf + 0.75 * Lb).Mx);
-
-            var Mpos = IF.Where(c => c.Value.Mx > 0).ToList();
-            var Mneg = IF.Where(c => c.Value.Mx < 0).ToList();
-
-            double Iyc = 0;
-
-            // checa se o perfil é assimetrico e se tem curvatura reversa
-            #region assimetrico
-            if (CS.profCode == 102)
-            {
-                if (Mpos.Count() > 0 && Mneg.Count() > 0)
-                {
-                    double bfs = CS.bfs;
-                    double tfs = CS.tfs;
-                    double bfi = CS.bfi;
-                    double tfi = CS.tfi;
-                    double M1 = getInternalForces(k, x).Mx;
-
-                    // top flange in compression
-                    if (M1 >= 0)
-                    {
-                        Iyc = tfs * bfs * bfs * bfs / 12;
-                    }
-                    // bottom flange in compression
-                    else
-                    {
-                        Iyc = tfi * bfi * bfi * bfi / 12;
-                    }
-                }
-                Rm = 0.5 + 2 * Math.Pow((Iyc / CS.Iy), 2);
-            }
-            #endregion
-
-            double cb = ((12.5 * Mmax) / (2.5 * Mmax + 3 * MA + 4 * MB + 3 * MC)) * Rm;
-            if (cb > 3) { cb = 3; }
-
-            return cb;
-        }
         /// <summary>
         /// Generate possible load classes
         /// </summary>
-        private void                        generateLoadCombinations()
+        private void generateLoadCombinations()
         {
-           
+            // TODO:  revisar coeficientes das combinaçoes e tentar utilizar os valores gerados no carregamento do formulario principal. ver arquivo MainForm.cs e DesignConfigs.cs
+
             this.LClass = new List<clsLoadClass>();
             // generate load class
-            clsLoadClass lc1 = new clsLoadClass(1, "PP",  1.25,  1.0,   1.0,   1.0,   false);
-            clsLoadClass lc2 = new clsLoadClass(2, "CP",  1.25,  1.0,   1.0,   1.0,   false);
-            clsLoadClass lc3 = new clsLoadClass(3, "SCC", 1.50,  0.8,   0.7,   0.6,   true);
-            clsLoadClass lc4 = new clsLoadClass(4, "SCP", 1.50,  0.7,   0.6,   0.4,   true);
-            clsLoadClass lc5 = new clsLoadClass(5, "V",   1.40,  0.6,   0.3,   0.0,   true);
-            lc5.isWind       = true;
+            clsLoadClass lc1 = new clsLoadClass(1, "PP", 1.40, 1.0, 1.0, 1.0, false);
+            clsLoadClass lc2 = new clsLoadClass(2, "CP", 1.40, 1.0, 1.0, 1.0, false);
+            clsLoadClass lc3 = new clsLoadClass(3, "SCC", 1.40, 0.8, 0.7, 0.6, true);
+            clsLoadClass lc4 = new clsLoadClass(4, "SCP", 1.40, 0.7, 0.6, 0.4, true);
+            clsLoadClass lc5 = new clsLoadClass(5, "V", 1.40, 0.6, 0.3, 0.0, true);
+            lc5.isWind = true;
 
             LClass.Add(lc1);
             LClass.Add(lc2);
@@ -1361,11 +1363,11 @@ namespace Beam
             LClass.Add(lc5);
 
             // generate load cases
-            clsLoadCase lcs1 = new clsLoadCase(1, "Peso Proprio",           lc1);
-            clsLoadCase lcs2 = new clsLoadCase(2, "Carga Permanente",       lc2);
-            clsLoadCase lcs3 = new clsLoadCase(3, "Sobrecarga de Cobertura",lc3);
-            clsLoadCase lcs4 = new clsLoadCase(4, "Sobrecarga de Piso",     lc4);
-            clsLoadCase lcs5 = new clsLoadCase(5, "Vento",                  lc5);
+            clsLoadCase lcs1 = new clsLoadCase(1, "Peso Proprio", lc1);
+            clsLoadCase lcs2 = new clsLoadCase(2, "Carga Permanente", lc2);
+            clsLoadCase lcs3 = new clsLoadCase(3, "Sobrecarga de Cobertura", lc3);
+            clsLoadCase lcs4 = new clsLoadCase(4, "Sobrecarga de Piso", lc4);
+            clsLoadCase lcs5 = new clsLoadCase(5, "Vento", lc5);
 
             LCase = new List<clsLoadCase>();
             LCase.Add(lcs1);
@@ -1375,23 +1377,23 @@ namespace Beam
             LCase.Add(lcs5);
 
             // generating ULS combinations
-            clsLoadCombination lco1 = new clsLoadCombination(1,"ELU: 1.25CP + 1.50SCC + 1.05SCP + 0.84V", combType.ULS,  lc1.gama,  lc3.gama,            lc4.gama*lc4.psi0,   lc5.gama * lc5.psi0);
-            clsLoadCombination lco2 = new clsLoadCombination(2,"ELU: 1.25CP + 1.20SCC + 1.50SCP + 0.84V", combType.ULS,  lc1.gama,  lc3.gama*lc3.psi0,   lc4.gama ,           lc5.gama * lc5.psi0);
-            clsLoadCombination lco3 = new clsLoadCombination(3,"ELU: 1.25CP + 1.20SCC + 1.05SCP + 1.40V", combType.ULS,  lc1.gama,  lc3.gama*lc3.psi0,   lc4.gama * lc4.psi0, lc5.gama);
-            clsLoadCombination lco4 = new clsLoadCombination(4,"ELU: 1.00CP + 1.40V",                     combType.ULS,  1.00,      0,                   0,                   lc5.gama);
+            clsLoadCombination lco1 = new clsLoadCombination(1, "ELU: 1.40CP + 1.40SCC + 1.05SCP + 0.84V", combType.ULS, lc1.gama, lc3.gama, lc4.gama * lc4.psi0, lc5.gama * lc5.psi0);
+            clsLoadCombination lco2 = new clsLoadCombination(2, "ELU: 1.40CP + 1.20SCC + 1.40SCP + 0.84V", combType.ULS, lc1.gama, lc3.gama * lc3.psi0, lc4.gama, lc5.gama * lc5.psi0);
+            clsLoadCombination lco3 = new clsLoadCombination(3, "ELU: 1.40CP + 1.20SCC + 1.05SCP + 1.40V", combType.ULS, lc1.gama, lc3.gama * lc3.psi0, lc4.gama * lc4.psi0, lc5.gama);
+            clsLoadCombination lco4 = new clsLoadCombination(4, "ELU: 1.00CP + 1.40V", combType.ULS, 1.00, 0, 0, lc5.gama);
 
             // generating SLS - QP
-            clsLoadCombination lco5 = new clsLoadCombination(5, "ELS QP: 1.00CP + 0.60SCC + 0.40SCP "  , combType.SLS, 1, lc3.psi2, lc4.psi2, lc5.psi2);
+            clsLoadCombination lco5 = new clsLoadCombination(5, "ELS QP: 1.00CP + 0.60SCC + 0.40SCP ", combType.SLS, 1, lc3.psi2, lc4.psi2, lc5.psi2);
 
             // generating SLS - FREQ
-            clsLoadCombination lco6 = new clsLoadCombination(6, "ELS FREQ: 1.00CP + 0.70SCC + 0.40SCP ",         combType.SLS, 1.00, lc3.psi1, lc4.psi2, lc5.psi2);
-            clsLoadCombination lco7 = new clsLoadCombination(7, "ELS FREQ: 1.00CP + 0.60SCC + 0.60SCP ",         combType.SLS, 1.00, lc3.psi2, lc4.psi1, lc5.psi2);
+            clsLoadCombination lco6 = new clsLoadCombination(6, "ELS FREQ: 1.00CP + 0.70SCC + 0.40SCP ", combType.SLS, 1.00, lc3.psi1, lc4.psi2, lc5.psi2);
+            clsLoadCombination lco7 = new clsLoadCombination(7, "ELS FREQ: 1.00CP + 0.60SCC + 0.60SCP ", combType.SLS, 1.00, lc3.psi2, lc4.psi1, lc5.psi2);
             clsLoadCombination lco8 = new clsLoadCombination(8, "ELS FREQ: 1.00CP + 0.60SCC + 0.40SCP + 0.30V ", combType.SLS, 1.00, lc3.psi2, lc4.psi2, lc5.psi1);
 
             // generating SLS - RARA
-            clsLoadCombination lco9  = new clsLoadCombination (9,  "ELS RARA: 1.00CP + 1.00SCC + 0.60SCP + 0.30V ", combType.SLS, 1.00,  1.00,      lc4.psi1,  lc5.psi1);
-            clsLoadCombination lco10 = new clsLoadCombination (10, "ELS RARA: 1.00CP + 0.70SCC + 1.00SCP + 0.30V ", combType.SLS, 1.00,  lc3.psi1,  1.00,      lc5.psi1);
-            clsLoadCombination lco11 = new clsLoadCombination (11, "ELS RARA: 1.00CP + 0.70SCC + 0.60SCP + 1.00V ", combType.SLS, 1.00,  lc3.psi1,  lc4.psi1,  1.0       );
+            clsLoadCombination lco9 = new clsLoadCombination(9, "ELS RARA: 1.00CP + 1.00SCC + 0.60SCP + 0.30V ", combType.SLS, 1.00, 1.00, lc4.psi1, lc5.psi1);
+            clsLoadCombination lco10 = new clsLoadCombination(10, "ELS RARA: 1.00CP + 0.70SCC + 1.00SCP + 0.30V ", combType.SLS, 1.00, lc3.psi1, 1.00, lc5.psi1);
+            clsLoadCombination lco11 = new clsLoadCombination(11, "ELS RARA: 1.00CP + 0.70SCC + 0.60SCP + 1.00V ", combType.SLS, 1.00, lc3.psi1, lc4.psi1, 1.0);
 
             LCombination = new List<clsLoadCombination>();
             LCombination.Add(lco1);
@@ -1412,41 +1414,42 @@ namespace Beam
         /// <summary>
         /// Calculate beam, generate nodal internal forces and span internal forces , generate support reactions
         /// </summary>
-        private void                        generateSelfWeightLoad()
+        private void generateSelfWeightLoad()
         {
-            double pp = this.CS.wgt * 0.01;
+            double pp = this.CS.wgt;
             clsLoad swLoad = new clsLoad(5, "Peso Proprio", 0, -pp, 0, MainWin.DesignConfigs.LoadCases[0], LoadType.D, 0);
             this.addLineLoad(swLoad);
         }
         /// <summary>
         /// Proceed to beam structural analisys
         /// </summary>
-        public void                         CalculateBeam()
+        public void CalculateBeam()
         {
             this.generateSelfWeightLoad();
             this.AssembleModel();
             this.solveEquation();
             this.calculateInternalForces();
             this.calculateReactions();
-            this.calculeSpanInternalForces();
+            // this.calculeSpanInternalForces();
+            this.fillInternalForcesOnBeam();
             this.calculateSpanDisplacements();
             //var cb = this.calculateCb(3, this.LCombination.First());
             //var teste = this.calculateCombIntForces(this.LCombination.First());
-            
+
         }
         /// <summary>
         /// gets maximum deflection for an specific direction and for all SLS combinations
         /// </summary>
         /// <param name="direction">direction: down or uplift </param>
         /// <returns></returns>
-        public Dictionary<string,Dictionary<double, double>> GetMaxCombDeflections(string direction)
+        public Dictionary<string, Dictionary<double, double>> GetMaxCombDeflections(string direction)
         {
-            Dictionary<string, Dictionary<double, double>>  result = new Dictionary<string, Dictionary<double, double>>();
+            Dictionary<string, Dictionary<double, double>> result = new Dictionary<string, Dictionary<double, double>>();
             Dictionary<string, Dictionary<double, double>> result_aux = new Dictionary<string, Dictionary<double, double>>();
 
             var ELScomb = LCombination.Where(c => c.cbType == combType.SLS).ToList();
 
-            foreach(var dsp in ELScomb)
+            foreach (var dsp in ELScomb)
             {
                 var aux = calculateCombDisplacements(dsp);
                 result_aux.Add(dsp.name, aux);
@@ -1477,5 +1480,191 @@ namespace Beam
 
             return result;
         }
+
+        /// <summary>
+        /// GEra detalhamento da viga, quantidade e peso de barras.
+        /// </summary>
+        public void GeraDetalhamento()
+        {
+            int NSections = this.nodes.Count();                      // pega o numero de secoes
+            var combinations = results.Select(c => c.Key).ToList();  // pega a lista de combinacoes ELU
+            double Asi=0;
+            double Ass=0;
+            double DiamBarraSup=0;
+            double DiamBarraInf=0;
+            double DiamEstribo=0;
+            int nBarrasSup=0;
+            int nBarrasInf=0;
+            int nEstribosMetro=0;
+           
+            this.DetalhamentoViga = new Dictionary<int, Detalhamento>();
+            
+
+            // loop em cada vao da viga
+            for ( int i =0; i < this.nVao; i++)
+            {
+                double L = vaos[i];      
+                
+                // loop em cada combinaçao para o primeiro trecho da viga - esquerda
+                foreach (var comb in combinations)
+                {
+
+                    // pega a area de aço máxima no primeiro trecho 0 < x <= 0.25L - inferior
+                    var secao_critica = (from c in results[comb] where (c.Key > 0 && c.Key <= 0.25 * L) select c.Value).ToList().OrderBy(c=>c.Asi).ToList();
+                    Asi = secao_critica.Last().Asi_real;
+                    // pega o diametro das barras no trecho
+                    DiamBarraInf = secao_critica.Last().diam_bar_inf;
+                    // pega a quantidade de barras no trecho
+                    nBarrasInf = secao_critica.Last().nLongInfBars;
+                    
+                    // pega a area de aço máxima no primeiro trecho 0 < x <= 0.25L - superior
+                    secao_critica.Clear();
+                    secao_critica = (from c in results[comb] where (c.Key > 0 && c.Key <= 0.25 * L) select c.Value).ToList().OrderBy(c => c.Ass).ToList();
+                    Ass = secao_critica.Last().Ass_real;
+                    // pega o diametro das barras no trecho
+                    DiamBarraSup = secao_critica.Last().diam_bar_sup;
+                    // pega a quantidade de barras no trecho
+                    nBarrasSup = secao_critica.Last().nLongSupBars;
+                    secao_critica.Clear();
+
+                    secao_critica = (from c in results[comb] where (c.Key > 0 && c.Key <= 0.25 * L) select c.Value).ToList().OrderBy(c => c.Asw).ToList();
+
+                    DiamEstribo = secao_critica.Last().diam_bar_estribo;
+                    nEstribosMetro = secao_critica.Last().nEstribosPorMetro;
+                   
+                }
+
+                Detalhamento detalhe_trecho1 = new Detalhamento(this.CS.b, this.CS.h, 0.25 * L, true, this.CS.cover);
+
+                detalhe_trecho1.Asi = Asi;
+                detalhe_trecho1.Ass = Ass;
+                detalhe_trecho1.NBarInferior = nBarrasInf;
+                detalhe_trecho1.NBarSuperior = nBarrasSup;
+                detalhe_trecho1.DiamBarInferior = DiamBarraInf;
+                detalhe_trecho1.DiamBarSuperior = DiamBarraSup;
+                detalhe_trecho1.DiamEstribo = DiamEstribo;
+                detalhe_trecho1.NEstriboMetro = nEstribosMetro;
+                detalhe_trecho1.CalculaPesoAço();
+
+                 Asi = 0;
+                 Ass = 0;
+                 DiamBarraSup = 0;
+                 DiamBarraInf = 0;
+                 DiamEstribo = 0;
+                 nBarrasSup = 0;
+                 nBarrasInf = 0;
+                 nEstribosMetro = 0;
+
+                // loop em cada combinaçao para o  trecho central da viga 
+                foreach (var comb in combinations)
+                {
+
+                    // pega a area de aço máxima no primeiro trecho 0.25L < x <= 0.75L - inferior
+                    var secao_critica = (from c in results[comb] where (c.Key > 0.25*L && c.Key <= 0.75 * L) select c.Value).ToList().OrderBy(c => c.Asi).ToList();
+                    Asi = secao_critica.Last().Asi_real;
+                    // pega o diametro das barras no trecho
+                    DiamBarraInf = secao_critica.Last().diam_bar_inf;
+                    // pega a quantidade de barras no trecho
+                    nBarrasInf = secao_critica.Last().nLongInfBars;
+
+                    // pega a area de aço máxima no primeiro trecho 0.25L < x <= 0.75L - superior
+                    secao_critica.Clear();
+                    secao_critica = (from c in results[comb] where (c.Key > 0.25 * L && c.Key <= 0.75 * L) select c.Value).ToList().OrderBy(c => c.Ass).ToList();
+                    Ass = secao_critica.Last().Ass_real;
+                    // pega o diametro das barras no trecho
+                    DiamBarraSup = secao_critica.Last().diam_bar_sup;
+                    // pega a quantidade de barras no trecho
+                    nBarrasSup = secao_critica.Last().nLongSupBars;
+                    secao_critica.Clear();
+
+                    secao_critica = (from c in results[comb] where (c.Key > 0.25 * L && c.Key <= 0.75 * L) select c.Value).ToList().OrderBy(c => c.Asw).ToList();
+
+                    DiamEstribo = secao_critica.Last().diam_bar_estribo;
+                    nEstribosMetro = secao_critica.Last().nEstribosPorMetro;
+
+                }
+
+                Detalhamento detalhe_trecho2 = new Detalhamento(this.CS.b, this.CS.h, 0.5 * L, false, this.CS.cover);
+
+                detalhe_trecho2.Asi = Asi;
+                detalhe_trecho2.Ass = Ass;
+                detalhe_trecho2.NBarInferior = nBarrasInf;
+                detalhe_trecho2.NBarSuperior = nBarrasSup;
+                detalhe_trecho2.DiamBarInferior = DiamBarraInf;
+                detalhe_trecho2.DiamBarSuperior = DiamBarraSup;
+                detalhe_trecho2.DiamEstribo = DiamEstribo;
+                detalhe_trecho2.NEstriboMetro = nEstribosMetro;
+                detalhe_trecho2.CalculaPesoAço();
+
+                Asi = 0;
+                Ass = 0;
+                DiamBarraSup = 0;
+                DiamBarraInf = 0;
+                DiamEstribo = 0;
+                nBarrasSup = 0;
+                nBarrasInf = 0;
+                nEstribosMetro = 0;
+
+                // loop em cada combinaçao para o último trecho  da viga - direito
+                foreach (var comb in combinations)
+                {
+
+                    // pega a area de aço máxima no primeiro trecho 0.75L < x <= L - inferior
+                    var secao_critica = (from c in results[comb] where (c.Key > 0.75 * L && c.Key <= L) select c.Value).ToList().OrderBy(c => c.Asi).ToList();
+                    Asi = secao_critica.Last().Asi_real;
+                    // pega o diametro das barras no trecho
+                    DiamBarraInf = secao_critica.Last().diam_bar_inf;
+                    // pega a quantidade de barras no trecho
+                    nBarrasInf = secao_critica.Last().nLongInfBars;
+
+                    // pega a area de aço máxima no primeiro trecho 0.75L < x <= L - superior
+                    secao_critica.Clear();
+                    secao_critica = (from c in results[comb] where (c.Key > 0.75 * L && c.Key <= L) select c.Value).ToList().OrderBy(c => c.Ass).ToList();
+                    Ass = secao_critica.Last().Ass_real;
+                    // pega o diametro das barras no trecho
+                    DiamBarraSup = secao_critica.Last().diam_bar_sup;
+                    // pega a quantidade de barras no trecho
+                    nBarrasSup = secao_critica.Last().nLongSupBars;
+                    secao_critica.Clear();
+
+                    secao_critica = (from c in results[comb] where (c.Key > 0.75 * L && c.Key <= L) select c.Value).ToList().OrderBy(c => c.Asw).ToList();
+
+                    DiamEstribo = secao_critica.Last().diam_bar_estribo;
+                    nEstribosMetro = secao_critica.Last().nEstribosPorMetro;
+                }
+
+                Detalhamento detalhe_trecho3 = new Detalhamento(this.CS.b, this.CS.h, 0.25 * L, true, this.CS.cover);
+
+                detalhe_trecho3.Asi = Asi;
+                detalhe_trecho3.Ass = Ass;
+                detalhe_trecho3.NBarInferior = nBarrasInf;
+                detalhe_trecho3.NBarSuperior = nBarrasSup;
+                detalhe_trecho3.DiamBarInferior = DiamBarraInf;
+                detalhe_trecho3.DiamBarSuperior = DiamBarraSup;
+                detalhe_trecho3.DiamEstribo = DiamEstribo;
+                detalhe_trecho3.NEstriboMetro = nEstribosMetro;
+                detalhe_trecho3.CalculaPesoAço();
+
+                this.DetalhamentoViga.Add(i * 3 + 1, detalhe_trecho1);
+                this.DetalhamentoViga.Add(i * 3 + 2, detalhe_trecho2);
+                this.DetalhamentoViga.Add(i * 3 + 3, detalhe_trecho3);
+
+                Asi = 0;
+                Ass = 0;
+                DiamBarraSup = 0;
+                DiamBarraInf = 0;
+                DiamEstribo = 0;
+                nBarrasSup = 0;
+                nBarrasInf = 0;
+                nEstribosMetro = 0;
+
+                
+
+            }
+
+
+
+        }
     }
-}
+    }
+    

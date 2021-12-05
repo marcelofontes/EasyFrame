@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using FEM;
 using System.IO;
 using MainWin;
-using DATAACCESS;
-using NBR8800;
-
+using NBR6118_2014;
+using System.Globalization;
+using System.Windows.Forms;
 
 namespace Beam
 {
@@ -16,7 +16,7 @@ namespace Beam
     {
         public clsNode pt1, pt2;
         public int ID;
-        public clsCsSection profile;
+        public CsSection profile;
     }
 
     class clsIOManager
@@ -24,10 +24,13 @@ namespace Beam
         List<clsNode>       nodes       = new List<clsNode>();
         List<double>        vaos;
         List<bar>           bars        = new List<bar>();
-        List<clsCsSection>  profileList = new List<clsCsSection>();
+        List<CsSection>     profileList = new List<CsSection>();
         List<clsLoadCase>   loadCases;
         List<clsLoad>       loads       = new List<clsLoad>();
         List<clsSupport>    supports    = new List<clsSupport>();
+        public List<Material>      concreteMaterial = new List<Material>();
+        public List<RebarMaterial> rebarMaterial = new List<RebarMaterial>();
+        public List<Rebar> rebar = new List<Rebar>();
         string              appPath;
         double              coordY      = 0.0f;
         int                 nVao;
@@ -88,7 +91,7 @@ namespace Beam
         /// <summary>
         /// generate bar list
         /// </summary>
-        public void             generateBars(clsCsSection _profile)
+        public void             generateBars(CsSection _profile)
         {
             this.sortnodesByCoord();
             for (int i = 0; i < nodes.Count() - 1; i++)
@@ -167,16 +170,19 @@ namespace Beam
 
         public List<bar>        getBars() { return this.bars; }
 
-        public bool             createBeamInputFile(
-                                                    string name, 
-                                                    List<float> vaos, 
-                                                    List<float>lbTop,
-                                                    List<float>lbBottom, 
-                                                    List<Load> loads,
-                                                    string CStable,
-                                                    string CSSection,
-                                                    string Steel)
+        
+        public bool createBeamInputFile(
+                                                       string name,
+                                                       List<float> vaos,
+                                                       List<Load> loads,
+                                                       string CSName,
+                                                       string concrete,
+                                                       double b,
+                                                       double h,
+                                                       double c
+                                                               )
         {
+
             try
             {
             
@@ -184,7 +190,7 @@ namespace Beam
 
             using (fl)
             {
-                fl.WriteLine("#CADIFEM V1.0");
+                fl.WriteLine("#EASYFRAME V1.0");
                 fl.WriteLine("#NAME");
                 fl.WriteLine(name);
 
@@ -195,10 +201,12 @@ namespace Beam
                 }
                 fl.WriteLine("#END");
 
-                fl.WriteLine("#SECTION");
-                fl.WriteLine("{0};{1};{2}",CStable, CSSection, Steel);
+                    // TODO: atualizar as linhas para a seçao que serão gravadas
 
-                fl.WriteLine("#LATERAL_SUPPORT_POSITION");
+                fl.WriteLine("#SECTION");
+                fl.WriteLine("{0};{1};{2};{3};{4}", CSName, b, h, c, concrete);
+
+               /* fl.WriteLine("#LATERAL_SUPPORT_POSITION");
                 for(int i = 0; i < lbTop.Count(); i++)
                 {
                     fl.WriteLine("{0};{1}", "top", lbTop[i]);
@@ -207,7 +215,7 @@ namespace Beam
                 {
                     fl.WriteLine("{0};{1}", "bottom", lbBottom[i]);
                 }
-                fl.WriteLine("#END");
+                fl.WriteLine("#END");*/
                 
                 fl.WriteLine("#DISTLOADS");
                 var pl = from p in loads where (p.type == "D") select p;
@@ -239,21 +247,22 @@ namespace Beam
 
         public clsBeam          readBeamInputFile(string fileName)
         {
+
+            string name = "";
+            List<double> vaos = new List<double>();
+            List<clsLoad> loads = new List<clsLoad>();
+            //CsSection CS = new CsSection();
+            Material Mat = new Material();
+            string csname = "";
+            double b=0;
+            double h=0;
+            double c=0;
+
             try
             {
-                StreamReader file = new StreamReader(ProjectInfo.projectPath + @"\Beams\" + fileName, false);
-
-                string name = "";
-                List<double> vaos = new List<double>();
-                List<double> lbtop = new List<double>();
-                List<double> lbbottom = new List<double>();
-                List<clsLoad> loads = new List<clsLoad>();
-                clsCsSection CS = new clsCsSection();
-                clsMaterial Mat = new clsMaterial();
-                string table = "";
-                string csname = "";
-                string aco = "";
-
+                StreamReader file = new StreamReader(ProjectInfo.projectPath + "\\Beams\\" + fileName, false);
+                             
+                
                 #region Leitura do arquivo
 
                 string aux = file.ReadLine(); // Le a versao do software
@@ -284,29 +293,16 @@ namespace Beam
                                 {
                                     aux = file.ReadLine();
                                     var aux1 = aux.Split(';');
-                                    table = aux1[0];
-                                    csname = aux1[1];
-                                    aco = aux1[2];
-                                }
-                                break;
-                            case "#LATERAL_SUPPORT_POSITION":
-                                {
-                                    aux = file.ReadLine();
-                                    while (aux.CompareTo("#END") != 0)
-                                    {
-                                        var aux1 = aux.Split(';');
-                                        switch (aux1[0])
-                                        {
-                                            case "top":
-                                                lbtop.Add(double.Parse(aux1[1]));
-                                                break;
-                                            case "bottom":
-                                                lbbottom.Add(double.Parse(aux1[1]));
-                                                break;
-                                        }
-                                        aux = file.ReadLine();
-                                    }
-                                }
+                                    csname = aux1[0];
+                                    b = double.Parse(aux1[1]);
+                                    h = double.Parse(aux1[2]);
+                                    c = double.Parse(aux1[3]);
+                                    string trash = aux1[4];
+                                    
+                                    this.ReadMaterialTable();
+                                    Mat = concreteMaterial.Find(m=>m.Name==trash);
+   
+                                                                                                        }
                                 break;
                             case "#DISTLOADS":
                                 {
@@ -319,7 +315,7 @@ namespace Beam
                                         l.name = aux1[1];
                                         l.Px = 0;
                                         l.Mz = 0;
-                                        l.Py = double.Parse(aux1[2]);
+                                        l.Py = -1*double.Parse(aux1[2]);
                                         l.lType = LoadType.D;
                                         string lc = aux1[3];
                                         var lcase = (from lcs in DesignConfigs.LoadCases where lcs.Name == lc select lcs).SingleOrDefault();
@@ -345,7 +341,7 @@ namespace Beam
                                         l.a = double.Parse(aux1[2]);
                                         l.Px = 0;
                                         l.Mz = 0;
-                                        l.Py = double.Parse(aux1[3]);
+                                        l.Py = -1*double.Parse(aux1[3]);
                                         l.lType = LoadType.P;
                                         string lc = aux1[4];
                                         var lcase = (from lcs in DesignConfigs.LoadCases where lcs.Name == lc select lcs).SingleOrDefault();
@@ -365,11 +361,9 @@ namespace Beam
                     #endregion
 
                     #region criação do elemento beam
-                    // selecionando o perfil na respectiva tabela
-                    MapeiaPerfil(table, csname, ref CS);
-                    MapeiaAco(aco, ref Mat);
-                    CS.material = Mat;
 
+
+                    CsSection CS = new CsSection(1, csname, b, h, Mat, c);
                     clsBeam beam = new clsBeam(name, vaos, CS);
 
                     // inserindo os carregamentos
@@ -388,16 +382,7 @@ namespace Beam
 
                     beam.CS = CS;
                     #endregion
-                    #region Insere travamentos laterais
-                    foreach (var a in lbtop)
-                    {
-                        beam.setLateralBracing(a, true, false);
-                    }
-                    foreach (var a in lbbottom)
-                    {
-                        beam.setLateralBracing(a, false, true);
-                    }
-                    #endregion
+                  
                     file.Close();
                     // System.Windows.Forms.MessageBox.Show("Leitura Completa");
                     return beam;
@@ -418,6 +403,36 @@ namespace Beam
             }
         }
 
+        public List<string>     readProjectFile(string ProjetcFilePath)
+        {
+            StreamReader fl = new StreamReader(ProjetcFilePath, false);
+            List<string> file = new List<string>();
+            List<string> beamList = new List<string>();
+
+
+            using (fl)
+            {
+                string line;
+                while ((line = fl.ReadLine()) != null)
+                {
+                    file.Add(line);
+                }
+            }
+            fl.Close();
+
+            int index = file.FindIndex(c => c == "[BEAMS]");
+            index++;
+            while (file[index] != "[END_BEAMS]")
+            {
+                beamList.Add(file[index]);
+
+                index++;
+            }
+
+
+            return beamList;
+        
+        }
         //private List<clsNode>   readnodes(StreamReader file, string tag)
         //{
         //    Console.WriteLine("Lendo nós");
@@ -726,285 +741,14 @@ namespace Beam
             }
 
         }
-
-        public void             MapeiaPerfil(string table, string profile, ref clsCsSection Cs)
-        {
-
-            switch (table)
-            {
-                case "C":
-                    break;
-                case "CS":
-                    {
-                       CS c = new PerfilCS().getProfileByName(profile);
-                        Cs.A = double.Parse(c.A.ToString());
-                        Cs.alpha = 0;
-                        Cs.bfi = double.Parse(c.bf.ToString());
-                        Cs.bfs = Cs.bfi;
-                        Cs.c = 0;
-                        Cs.Cw = double.Parse(c.Cw.ToString());
-                        Cs.d = int.Parse(c.d.ToString());
-                        Cs.ID = int.Parse(c.ID.ToString());
-                        Cs.It = double.Parse(c.IT.ToString());
-                        Cs.Ix = double.Parse(c.Ix.ToString());
-                        Cs.Iy = double.Parse(c.Iy.ToString());
-                        Cs.Name = c.nome;
-                        Cs.profCode = int.Parse(c.ProfCode.ToString());
-                        Cs.R = int.Parse(c.R.ToString());
-                        Cs.rT = double.Parse(c.rT.ToString());
-                        Cs.rx = double.Parse(c.rx.ToString());
-                        Cs.ry = double.Parse(c.ry.ToString());
-                        Cs.table = "CS";
-                        Cs.tfi = double.Parse(c.tf.ToString());
-                        Cs.tfs = Cs.tfi;
-                        Cs.tw = double.Parse(c.tw.ToString());
-                        Cs.wgt = double.Parse(c.peso.ToString());
-                        Cs.Wxi = double.Parse(c.Wx.ToString());
-                        Cs.Wxs = Cs.Wxi;
-                        Cs.Wy = double.Parse(c.Wy.ToString());
-                        Cs.XCG = 0;
-                        Cs.Zx = double.Parse(c.Zx.ToString());
-                        Cs.Zy = double.Parse(c.Zy.ToString());
-                        Cs.fabrication = int.Parse(c.Fabrication.ToString());
-                        
-                        Cs.defineCG();
-                    }
-                    break;
-                case "VS":
-                    {
-                        VS c = new PerfilVS().getProfileByName(profile);
-                        Cs.A = double.Parse(c.A.ToString());
-                        Cs.alpha = 0;
-                        Cs.bfi = double.Parse(c.bf.ToString());
-                        Cs.bfs = Cs.bfi;
-                        Cs.c = 0;
-                        Cs.Cw = double.Parse(c.Cw.ToString());
-                        Cs.d = int.Parse(c.d.ToString());
-                        Cs.ID = int.Parse(c.ID.ToString());
-                        Cs.It = double.Parse(c.IT.ToString());
-                        Cs.Ix = double.Parse(c.Ix.ToString());
-                        Cs.Iy = double.Parse(c.Iy.ToString());
-                        Cs.Name = c.nome;
-                        Cs.profCode = int.Parse(c.ProfCode.ToString());
-                        Cs.R = int.Parse(c.R.ToString());
-                        Cs.rT = double.Parse(c.rT.ToString());
-                        Cs.rx = double.Parse(c.rx.ToString());
-                        Cs.ry = double.Parse(c.ry.ToString());
-                        Cs.table = "VS";
-                        Cs.tfi = double.Parse(c.tf.ToString());
-                        Cs.tfs = Cs.tfi;
-                        Cs.tw = double.Parse(c.tw.ToString());
-                        Cs.wgt = double.Parse(c.peso.ToString());
-                        Cs.Wxi = double.Parse(c.Wx.ToString());
-                        Cs.Wxs = Cs.Wxi;
-                        Cs.Wy = double.Parse(c.Wy.ToString());
-                        Cs.XCG = 0;
-                        Cs.Zx = double.Parse(c.Zx.ToString());
-                        Cs.Zy = double.Parse(c.Zy.ToString());
-                        Cs.fabrication = int.Parse(c.Fabrication.ToString());
-                        Cs.defineCG();
-                    }
-                    break;
-                case "CVS":
-                    {
-                        CVS c = new PerfilCVS().getProfileByName(profile);
-                        Cs.A = double.Parse(c.A.ToString());
-                        Cs.alpha = 0;
-                        Cs.bfi = double.Parse(c.bf.ToString());
-                        Cs.bfs = Cs.bfi;
-                        Cs.c = 0;
-                        Cs.Cw = double.Parse(c.Cw.ToString());
-                        Cs.d = int.Parse(c.d.ToString());
-                        Cs.ID = int.Parse(c.ID.ToString());
-                        Cs.It = double.Parse(c.IT.ToString());
-                        Cs.Ix = double.Parse(c.Ix.ToString());
-                        Cs.Iy = double.Parse(c.Iy.ToString());
-                        Cs.Name = c.nome;
-                        Cs.profCode = int.Parse(c.ProfCode.ToString());
-                        Cs.R = int.Parse(c.R.ToString());
-                        Cs.rT = double.Parse(c.rT.ToString());
-                        Cs.rx = double.Parse(c.rx.ToString());
-                        Cs.ry = double.Parse(c.ry.ToString());
-                        Cs.table = "CVS";
-                        Cs.tfi = double.Parse(c.tf.ToString());
-                        Cs.tfs = Cs.tfi;
-                        Cs.tw = double.Parse(c.tw.ToString());
-                        Cs.wgt = double.Parse(c.peso.ToString());
-                        Cs.Wxi = double.Parse(c.Wx.ToString());
-                        Cs.Wxs = Cs.Wxi;
-                        Cs.Wy = double.Parse(c.Wy.ToString());
-                        Cs.XCG = 0;
-                        Cs.Zx = double.Parse(c.Zx.ToString());
-                        Cs.Zy = double.Parse(c.Zy.ToString());
-                        Cs.fabrication = int.Parse(c.Fabrication.ToString());
-                        Cs.defineCG();
-                    }
-                    break;
-                case "PS":
-                    {
-                        PS c = new PerfilPS().getProfileByName(profile);
-                        Cs.A = double.Parse(c.A.ToString());
-                        Cs.alpha = 0;
-                        Cs.bfi = double.Parse(c.bf.ToString());
-                        Cs.bfs = Cs.bfi;
-                        Cs.c = 0;
-                        Cs.Cw = double.Parse(c.Cw.ToString());
-                        Cs.d = int.Parse(c.d.ToString());
-                        Cs.ID = int.Parse(c.ID.ToString());
-                        Cs.It = double.Parse(c.IT.ToString());
-                        Cs.Ix = double.Parse(c.Ix.ToString());
-                        Cs.Iy = double.Parse(c.Iy.ToString());
-                        Cs.Name = c.nome;
-                        Cs.profCode = int.Parse(c.ProfCode.ToString());
-                        Cs.R = int.Parse(c.R.ToString());
-                        Cs.rT = double.Parse(c.rT.ToString());
-                        Cs.rx = double.Parse(c.rx.ToString());
-                        Cs.ry = double.Parse(c.ry.ToString());
-                        Cs.table = "PS";
-                        Cs.tfi = double.Parse(c.tf.ToString());
-                        Cs.tfs = Cs.tfi;
-                        Cs.tw = double.Parse(c.tw.ToString());
-                        Cs.wgt = double.Parse(c.peso.ToString());
-                        Cs.Wxi = double.Parse(c.Wx.ToString());
-                        Cs.Wxs = Cs.Wxi;
-                        Cs.Wy = double.Parse(c.Wy.ToString());
-                        Cs.XCG = 0;
-                        Cs.Zx = double.Parse(c.Zx.ToString());
-                        Cs.Zy = double.Parse(c.Zy.ToString());
-                        Cs.fabrication = int.Parse(c.Fabrication.ToString());
-                        Cs.defineCG();
-                    }
-                    break;
-                case "PSa":
-                    {
-                        PSa c = new PerfilPSa().getProfileByName(profile);
-                        Cs.A = double.Parse(c.A.ToString());
-                        Cs.alpha = 0;
-                        Cs.bfi = double.Parse(c.bfi.ToString());
-                        Cs.bfs = double.Parse(c.bfs.ToString());
-                        Cs.c = 0;
-                        Cs.Cw = double.Parse(c.Cw.ToString());
-                        Cs.d = int.Parse(c.d.ToString());
-                        Cs.ID = int.Parse(c.ID.ToString());
-                        Cs.It = double.Parse(c.IT.ToString());
-                        Cs.Ix = double.Parse(c.Ix.ToString());
-                        Cs.Iy = double.Parse(c.Iy.ToString());
-                        Cs.Name = c.nome;
-                        Cs.profCode = int.Parse(c.ProfCode.ToString());
-                        Cs.R = int.Parse(c.R.ToString());
-                        Cs.rT = double.Parse(c.rT.ToString());
-                        Cs.rx = double.Parse(c.rx.ToString());
-                        Cs.ry = double.Parse(c.ry.ToString());
-                        Cs.table = "PSa";
-                        Cs.tfi = double.Parse(c.tfi.ToString());
-                        Cs.tfs = double.Parse(c.tfs.ToString());
-                        Cs.tw = double.Parse(c.tw.ToString());
-                        Cs.wgt = double.Parse(c.peso.ToString());
-                        Cs.Wxi = double.Parse(c.Wxi.ToString());
-                        Cs.Wxs = double.Parse(c.Wxs.ToString());
-                        Cs.Wy = double.Parse(c.Wy.ToString());
-                        Cs.XCG = 0;
-                        Cs.Zx = double.Parse(c.Zx.ToString());
-                        Cs.Zy = double.Parse(c.Zy.ToString());
-                        Cs.fabrication = int.Parse(c.Fabrication.ToString());
-                        Cs.defineCG();
-                    }
-                    break;
-                case "VSM":
-                    {
-                        VSM c = new PerfilVSM().getProfileByName(profile);
-                        Cs.A = double.Parse(c.A.ToString());
-                        Cs.alpha = 0;
-                        Cs.bfi = double.Parse(c.bfi.ToString());
-                        Cs.bfs = double.Parse(c.bfs.ToString());
-                        Cs.c = 0;
-                        Cs.Cw = double.Parse(c.Cw.ToString());
-                        Cs.d = int.Parse(c.d.ToString());
-                        Cs.ID = int.Parse(c.ID.ToString());
-                        Cs.It = double.Parse(c.IT.ToString());
-                        Cs.Ix = double.Parse(c.Ix.ToString());
-                        Cs.Iy = double.Parse(c.Iy.ToString());
-                        Cs.Name = c.nome;
-                        Cs.profCode = int.Parse(c.ProfCode.ToString());
-                        Cs.R = int.Parse(c.R.ToString());
-                        Cs.rT = double.Parse(c.rT.ToString());
-                        Cs.rx = double.Parse(c.rx.ToString());
-                        Cs.ry = double.Parse(c.ry.ToString());
-                        Cs.table = "VSM";
-                        Cs.tfi = double.Parse(c.tfi.ToString());
-                        Cs.tfs = double.Parse(c.tfs.ToString());
-                        Cs.tw = double.Parse(c.tw.ToString());
-                        Cs.wgt = double.Parse(c.peso.ToString());
-                        Cs.Wxi = double.Parse(c.Wxi.ToString());
-                        Cs.Wxs = double.Parse(c.Wxs.ToString());
-                        Cs.Wy = double.Parse(c.Wy.ToString());
-                        Cs.XCG = 0;
-                        Cs.Zx = double.Parse(c.Zx.ToString());
-                        Cs.Zy = double.Parse(c.Zy.ToString());
-                        Cs.fabrication = int.Parse(c.Fabrication.ToString());
-                        Cs.defineCG();
-                    }
-                    break;
-                case "W":
-                    {
-                        W c = new PerfilW().getProfileByName(profile);
-                        Cs.A = double.Parse(c.A.ToString());
-                        Cs.alpha = 0;
-                        Cs.bfi = double.Parse(c.bf.ToString());
-                        Cs.bfs = Cs.bfi;
-                        Cs.c = 0;
-                        Cs.Cw = double.Parse(c.Cw.ToString());
-                        Cs.d = int.Parse(c.d.ToString());
-                        Cs.ID = int.Parse(c.ID.ToString());
-                        Cs.It = double.Parse(c.IT.ToString());
-                        Cs.Ix = double.Parse(c.Ix.ToString());
-                        Cs.Iy = double.Parse(c.Iy.ToString());
-                        Cs.Name = c.nome;
-                        Cs.profCode = int.Parse(c.ProfCode.ToString());
-                        Cs.R = int.Parse(c.R.ToString());
-                        Cs.rT = double.Parse(c.rT.ToString());
-                        Cs.rx = double.Parse(c.rx.ToString());
-                        Cs.ry = double.Parse(c.ry.ToString());
-                        Cs.table = "W";
-                        Cs.tfi = double.Parse(c.tf.ToString());
-                        Cs.tfs = Cs.tfi;
-                        Cs.tw = double.Parse(c.tw.ToString());
-                        Cs.wgt = double.Parse(c.peso.ToString());
-                        Cs.Wxi = double.Parse(c.Wx.ToString());
-                        Cs.Wxs = Cs.Wxi;
-                        Cs.Wy = double.Parse(c.Wy.ToString());
-                        Cs.XCG = 0;
-                        Cs.Zx = double.Parse(c.Zx.ToString());
-                        Cs.Zy = double.Parse(c.Zy.ToString());
-                        Cs.fabrication = int.Parse(c.Fabrication.ToString());
-                        Cs.defineCG();
-                    }
-                    break;
-            }
-        }
-
-        public void             MapeiaAco(string SteelName, ref clsMaterial Mat)
-        {
-            Materials m = new Materials();
-            var mt = m.getMaterialByName(SteelName);
-
-            Mat.E = mt.E;
-            Mat.G = mt.G;
-            Mat.Fy = mt.Fy;
-            Mat.Fu = mt.Fu;
-            Mat.ID = mt.ID;
-            Mat.Name = mt.name;
-            Mat.uniWeight = mt.unitWeight;
-
-        }
-
+      
         public void             printDesignResults(string beamName, Dictionary<string,Dictionary<double,DsgResult>>res)
         {
             StreamWriter fl = new StreamWriter(ProjectInfo.projectPath + @"\Beams\" + beamName + ".txt", false);
 
             using (fl)
             {
-                fl.WriteLine("{0,-20:f2}\t{1,10:f2}\t{2,10:f2}\t{3,10:f2}\t{4,10:f2}\t{5,10:f2}\t{6,10:f2}\t{7,10:f2}", "POSIÇÃO", "Mdx", "Vdy", "Lb", "Mnx", "Vny", "Cb","Sd/Rd");
+                fl.WriteLine("{0,-20:f2}\t{1,10:f2}\t{2,10:f2}\t{3,10:f2}\t{4,10:f2}\t{5,10:f2}\t{6,10:f2}\t{7,10:f2}", "POSIÇÃO", "Mdx", "Vdy", "As", "As`", "Asw", "Flecha","Status");
                 foreach(var r in res)
                 {
                     string k = r.Key;
@@ -1012,15 +756,15 @@ namespace Beam
                     var aux = res[k];
                     foreach(var r1 in aux)
                     {
-                        fl.WriteLine("{0,-20:f2}\t{1,10:f2}\t{2,10:f2}\t{3,10:f2}\t{4,10:f2}\t{5,10:f2}\t{6,10:f2}\t{7,10:f2}", 
-                                        r1.Key, 
-                                        r1.Value.IF_Mx,
-                                        r1.Value.IF_Vy, 
-                                        r1.Value.Lb, 
-                                        r1.Value.BendingX,
-                                        r1.Value.ShearY, 
-                                        r1.Value.Cb, 
-                                        Math.Max(r1.Value.uc_BendingX,r1.Value.uc_ShearY));
+                        fl.WriteLine("{0,-20:f2}\t{1,10:f2}\t{2,10:f2}\t{3,10:f2}\t{4,10:f2}\t{5,10:f2}\t{6,10:f2}\t{7,10:f2}",
+                                        r1.Key,
+                                        r1.Value.IF_Mdx,
+                                        r1.Value.IF_Vdy,
+                                        r1.Value.Asi,
+                                        r1.Value.Ass,
+                                        r1.Value.Asw,
+                                        r1.Value.wtotal,
+                                        r1.Value.status);
                     }
                 }
                 fl.Close();
@@ -1054,7 +798,10 @@ namespace Beam
                     }
                 }
                 flw.Close();
+                File.Delete(ProjectInfo.projectPath + "\\Beams\\" + beamName + ".cdv");
+                File.Delete(ProjectInfo.projectPath + "\\Beams\\" + beamName + ".txt");
                 return true;
+                
             }
             catch (IOException ex)
             {
@@ -1065,6 +812,122 @@ namespace Beam
 
         }
 
+        public void             CopyBeam(string CpBeam, string NewBeam, string _UltimaViga)
+        {
+            string UltimaViga = _UltimaViga;
+            try
+            {
+                File.Copy(CpBeam, NewBeam);
+
+                // copia o arquivo
+                string buffer = File.ReadAllText(NewBeam);
+                var CpBeamName = CpBeam.Split('\\');
+                var NewBeamName = NewBeam.Split('\\');
+
+                var A = CpBeamName.Last().Split('.').First();
+                var B = NewBeamName.Last().Split('.').First();
+                buffer = buffer.Replace(A,B);
+                File.WriteAllText(NewBeam, buffer);
+
+                // Modifica o arquivo Projeto.CDP para incluir o nome da nova viga na lista
+                string NomeProjeto = ProjectInfo.projectPath + "\\"+ ProjectInfo.projectFileName;
+                string buffer2 = File.ReadAllText(NomeProjeto);
+                int i = buffer2.IndexOf(UltimaViga);
+                buffer2 = buffer2.Insert(i+UltimaViga.Length, "\r\n"+B);
+                File.WriteAllText(NomeProjeto, buffer2);
+
+            }
+            catch(Exception e)
+            {
+                MessageBox.Show(e.Message);
+            }
+            
+
+        }
+
+        public void SaveProjectAs(string ActualFolder, string DestinationFolder)
+        {
+            if (!Directory.Exists(DestinationFolder))
+                Directory.CreateDirectory(DestinationFolder);
+            string[] files = Directory.GetFiles(ActualFolder);
+            foreach (string file in files)
+            {
+                string name = Path.GetFileName(file);
+                string dest = Path.Combine(DestinationFolder, name);
+                File.Copy(file, dest);
+            }
+            string[] folders = Directory.GetDirectories(ActualFolder);
+            foreach (string folder in folders)
+            {
+                string name = Path.GetFileName(folder);
+                string dest = Path.Combine(DestinationFolder, name);
+                SaveProjectAs(folder, dest);
+            }
+            ProjectInfo.projectPath = DestinationFolder;
+            
+        }
+        public void             ReadMaterialTable()
+        {
+            StreamReader fileConcrete = new StreamReader(AppInfo.appDataPath + @"\Material.dat", false);
+            string buffer;
+            
+            buffer = fileConcrete.ReadLine();
+
+            buffer = fileConcrete.ReadLine();
+            if (buffer.CompareTo("#BEGIN") == 0)
+            {
+                buffer = fileConcrete.ReadLine();
+                while (buffer.CompareTo("#END") != 0)
+                {
+                    var aux = buffer.Split(';');
+                    TipoAgregado ag;
+                    switch (aux[3])
+                    {
+                        case "GRANITO":
+                            ag = TipoAgregado.GRANITO;
+                            break;
+
+                        case "BASALTO":
+                            ag = TipoAgregado.BASALTO;
+                            break;
+                        case "CALCARIO":
+                            ag = TipoAgregado.CALCARIO;
+                            break;
+                        case "ARENITO":
+                            ag = TipoAgregado.ARENITO;
+                            break;
+                        default:
+                            ag = TipoAgregado.GRANITO;
+                            break;
+                    }
+                    var mat = new Material(int.Parse(aux[0]), aux[1], double.Parse(aux[2]), ag);
+                    concreteMaterial.Add(mat);
+                    buffer = fileConcrete.ReadLine();
+                  }
+
+            }
+            
+        }
+   
+        public void             ReadRebarMaterialTable()
+        {
+            string buffer;
+            StreamReader fileRebar = new StreamReader(AppInfo.appDataPath + @"\RebarMaterial.dat", false);
+           
+            buffer = fileRebar.ReadLine();
+            buffer = fileRebar.ReadLine();
+            if (buffer.CompareTo("#BEGIN") == 0)
+            {
+                buffer = fileRebar.ReadLine();
+                while (buffer.CompareTo("#END") != 0)
+                {
+                    var aux = buffer.Split(';');
+                    RebarMaterial rm = new RebarMaterial(aux[1], double.Parse(aux[2]));
+                    rebarMaterial.Add(rm);
+                    buffer = fileRebar.ReadLine();
+                }
+            }
+        }
         public bool             InsertBeamOnProject(string beamName)
         {
             try
@@ -1101,6 +964,143 @@ namespace Beam
                 return false;
             }
         }
+
+        public void             ReadRebarSectionTable()
+        {
+            
+            string buffer;
+            ReadRebarMaterialTable();
+            
+            StreamReader fileRebar = new StreamReader(AppInfo.appDataPath + @"\RebarSection.dat", false);
+
+            buffer = fileRebar.ReadLine();
+            buffer = fileRebar.ReadLine();
+            if (buffer.CompareTo("#BEGIN") == 0)
+            {
+                buffer = fileRebar.ReadLine();
+                while (buffer.CompareTo("#END") != 0)
+                {
+                    var aux = buffer.Split(';');
+                    var fy = rebarMaterial.Where(c => c.Name == aux[3]).Select(c => c.Fy).SingleOrDefault();
+                    Rebar rb = new Rebar(double.Parse(aux[0], CultureInfo.InvariantCulture),double.Parse(aux[1], CultureInfo.InvariantCulture),double.Parse(aux[2], CultureInfo.InvariantCulture),aux[3],fy); 
+                    this.rebar.Add(rb);
+                    buffer = fileRebar.ReadLine();
+                }
+            }
+
+        }
+
+        public void             DesignBeam(ref clsBeam beam)
+        {
+
+            beam.CalculateBeam();
+            
+          if (rebar.Count == 0) { ReadRebarSectionTable(); }
+
+            double L = beam.Length;
+          
+            var coords = beam.getNodes().Select(c => c.GetCoord().x).ToList();
+
+            Dictionary<double, double> IF_SLS = new Dictionary<double, double>(); // esforços para combinaçoes de serviço
+            Dictionary<string, Dictionary<double, double>> Def_SLS = new Dictionary<string, Dictionary<double, double>>();     // deformaçoes para combinaçoes de serviço
+            Dictionary<string, Dictionary<double, DsgResult>> results = new Dictionary<string, Dictionary<double, DsgResult>>();
+
+
+            // GEt results for SLS combination
+            var lc = (from c in beam.LCombination where c.cbType == combType.ULS select c).ToList();
+            var lc_SLS = (from c in beam.LCombination where c.cbType == combType.SLS select c).ToList();
+
+            // pegar esforços para verificaçoes SLS
+            foreach (var lcase in lc_SLS)
+            {
+                if (lcase.name.Contains("FREQ"))
+                {
+                    
+                    foreach( var li in coords)
+                    {
+                        if (!IF_SLS.ContainsKey(li))
+                        {
+                            IF_SLS.Add(li, beam.getInternalForces(lcase, li).Mx);
+                        }
+                        else
+                        {
+                            var aux = beam.getInternalForces(lcase, li).Mx;
+                            IF_SLS[li] = IF_SLS[li] > aux ? IF_SLS[li] : beam.getInternalForces(lcase, li).Mx;
+
+                        }
+
+                        
+                    }
+
+                }
+            }
+            // pegar deslocamentos para verificaçao SLS   
+            foreach (var lcase in lc_SLS)
+            {
+                
+                foreach ( var li in coords)
+                {
+                    Dictionary<double, double> aux = new Dictionary<double, double>();
+                    var teste = beam.getDisplacements(lcase, li);
+                    aux.Add(li, beam.getDisplacements(lcase, li));
+                    if (!Def_SLS.ContainsKey(lcase.name))
+                    {
+
+                        Def_SLS.Add(lcase.name, aux);
+                    }
+                    else
+                    {
+                        Def_SLS[lcase.name].Add(li, beam.getDisplacements(lcase, li));
+
+                    }
+                    
+                }
+            }
+
+            // check for ULS combination
+            foreach (var lcase in lc)
+            {
+                Dictionary<double, DsgResult> aux = new Dictionary<double, DsgResult>();
+                
+
+               foreach ( var li in coords)
+                {
+
+                    // pega esforços para verificacao dos ELU
+                    var iF = beam.getInternalForces(lcase, li);
+
+                    // pega o momento para verificaçao do SLS para a mesma posicao da viga
+                    //double Mx = (from f in IF_SLS where f.Key == li select f.Value).SingleOrDefault();
+                    double Mx = (from c in IF_SLS where c.Key == li select c.Value).SingleOrDefault();
+
+                    // pega a flecha para cada combinaçao SLS no ponto li
+                    Dictionary<string, double> Def = new Dictionary<string, double>();
+
+                    foreach (var d in Def_SLS)
+                    {
+                        string aux1 = d.Key;
+                        double aux2 = d.Value.Where(x => x.Key == li).Select(x => x.Value).SingleOrDefault();
+                        Def.Add(aux1, aux2);
+
+                    }
+
+
+                    NBR6118 des = new NBR6118(beam.CS, iF, 2, this.rebar, Mx, beam.CS.material.E, Def, beam.vaos, li); ;
+                    aux.Add(li, des.StartDegsign());
+
+                    
+                }
+                results.Add(lcase.name, aux);
+            }
+            beam.results = results;
+            printDesignResults(beam.Name, beam.results);
+            
+           
+        }
+    
+           
+
+        
 
     }
 }

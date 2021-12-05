@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 using System.IO;
+using Beam;
 
 namespace MainWin
 {
@@ -16,7 +17,7 @@ namespace MainWin
     {
         private string appPath;
         public TreeNode nodeBeam ;
-        public TreeNode nodeElement;
+        //public TreeNode nodeElement;
         public ImageList il = new ImageList();
 
         public TreeForm()
@@ -56,6 +57,7 @@ namespace MainWin
                 }
                
                 popupMenu.Show(this.PointToScreen( new Point(e.X,e.Y)));
+                
             }
         }
 
@@ -66,7 +68,33 @@ namespace MainWin
 
         private void popupMenu_ItemClicked          (object sender, ToolStripItemClickedEventArgs e)
         {
-            MessageBox.Show(e.ClickedItem.Text + "-" + this.treeView1.SelectedNode.Text);
+            // MessageBox.Show(e.ClickedItem.Text + "-" + this.treeView1.SelectedNode.Text);
+            int i = this.nodeBeam.Nodes.Count;
+            string UltimaViga = this.nodeBeam.Nodes[i-1].Text;
+
+            if (e.ClickedItem.Text == "Copiar")
+            {
+                
+                InputForm InpForm = new InputForm(this.treeView1.SelectedNode.Text,UltimaViga);
+                
+                
+                InpForm.ShowDialog();
+                string NovaViga = InpForm.NomeNovaViga;
+                this.insertChildBeamNode(NovaViga);
+               
+            }
+            if (e.ClickedItem.Text == "Apagar")
+            {
+                clsIOManager io = new clsIOManager();
+                string Viga = this.treeView1.SelectedNode.Text;
+                if (MessageBox.Show("Apagar Viga?", "Apagar Viga", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    io.removeBeamFromProject(Viga);
+                    this.removeBeamChildNode(Viga);
+                }
+            }
+               
+
         }
 
         private void treeView1_AfterSelect          (object sender, TreeViewEventArgs e)
@@ -146,6 +174,7 @@ namespace MainWin
             catch(Exception ex)
             {
                 MessageBox.Show(ex.Message);
+                
             }
 
         }
@@ -159,18 +188,18 @@ namespace MainWin
             this.treeView1.ImageList = il;
 
             nodeBeam = new TreeNode();
-            nodeElement = new TreeNode();
+            //nodeElement = new TreeNode();
             
-            nodeBeam = this.treeView1.Nodes.Add("Vigas");
+            nodeBeam = this.treeView1.Nodes.Add("Vigas");  // pasta vigas na arvore do projeto
             this.treeView1.Nodes[0].Name = "Vigas";
             nodeBeam.ImageIndex = 0;
             nodeBeam.SelectedImageIndex = 1;
 
             //nodeElement.Name = "Elementos";
-             nodeElement = this.treeView1.Nodes.Add("Elementos");
-            this.treeView1.Nodes[0].Name = "Elementos";
-            nodeElement.ImageIndex = 0;
-            nodeElement.SelectedImageIndex = 1;
+        //     nodeElement = this.treeView1.Nodes.Add("Elementos"); 
+         //   this.treeView1.Nodes[0].Name = "Elementos";
+         //   nodeElement.ImageIndex = 0;
+         //   nodeElement.SelectedImageIndex = 1;
 
             
         }

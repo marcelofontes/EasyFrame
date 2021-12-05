@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="NameAndType">
+  <Class Name="FEM.clsElement">
+    <Position X="8.25" Y="3.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>QAAIBSKEAQAACAAQgCAEAABAACAg0BgEAEBCAoAEFAA=</HashCode>
+      <FileName>clsElement.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FEM.clsFEM">
+    <Position X="9.5" Y="0.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>clsFEM.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FEM.clsLoad">
+    <Position X="0.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAIAAiQAAAAAAAAAAAAAMAAAgQAAABAgAAAg=</HashCode>
+      <FileName>clsLoad.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FEM.clsLoadClass">
+    <Position X="4.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CAAAAAAAAAAA6AAAAAAAAAQAAACAAIAAAAAAAAAAAAA=</HashCode>
+      <FileName>clsLoadCase.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FEM.clsLoadCase">
+    <Position X="2.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAAAAAAAASAAAAAAAAAQAAAAAAAAAA=</HashCode>
+      <FileName>clsLoadCase.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FEM.clsLoadCombination">
+    <Position X="0.75" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAgAEABAAAAAgAAAABAAAAAQAAAEAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>clsLoadCombination.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FEM.clsNode">
+    <Position X="10.5" Y="3.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>wACAEEBAAAAQAEABhAAACAAAAgAIQgokQABCAIABAAg=</HashCode>
+      <FileName>clsNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FEM.clsPoint">
+    <Position X="2.5" Y="3" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAABgAAAAAAA=</HashCode>
+      <FileName>clsPoint.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FEM.clsSupport">
+    <Position X="6.25" Y="3.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAASAAAAIAAAAAAAAAAAAAAAAAAAAAAAAIAAABAA=</HashCode>
+      <FileName>clsSupport.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FEM.CsSection">
+    <Position X="4.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAEAIAgAEABkgQAwAAAAAAQAAAAAAAQAYQAAIABAAAA=</HashCode>
+      <FileName>CsSection.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FEM.Material">
+    <Position X="13" Y="3.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>BAAAAAAAAAAAgAAAAAIAAAAAAAAAAAQABAAQCgACAIA=</HashCode>
+      <FileName>Material.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FEM.RebarMaterial">
+    <Position X="2.5" Y="5.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAIAAAAAAAQAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>RebarMaterial.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="FEM.IntForces" Collapsed="true">
+    <Position X="15.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAhAAAAACEAAAAAAAAAAAAAAAAAAAAAAAABhAAAA=</HashCode>
+      <FileName>clsNode.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="FEM.Disp" Collapsed="true">
+    <Position X="13.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAA=</HashCode>
+      <FileName>clsNode.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="FEM.Release" Collapsed="true">
+    <Position X="13.75" Y="1.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAABAA=</HashCode>
+      <FileName>clsNode.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="FEM.React" Collapsed="true">
+    <Position X="15.5" Y="1.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAA=</HashCode>
+      <FileName>clsSupport.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Enum Name="FEM.ElemType" Collapsed="true">
+    <Position X="17.25" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAEAAAAAA=</HashCode>
+      <FileName>clsElement.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="FEM.LoadType" Collapsed="true">
+    <Position X="15.5" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBAAAA=</HashCode>
+      <FileName>clsLoad.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="FEM.combType" Collapsed="true">
+    <Position X="17.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAIAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>clsLoadCombination.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="FEM.TipoAgregado" Collapsed="true">
+    <Position X="17.25" Y="1.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAACAAEAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAI=</HashCode>
+      <FileName>Material.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
